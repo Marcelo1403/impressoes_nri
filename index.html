@@ -3,261 +3,441 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b3f73">
-  <title>Impressão de NRI</title>
+  <meta name="theme-color" content="#073b6f">
+  <title>Gestão de NRI</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <button class="menu-btn" id="menuBtn" aria-label="Abrir menu">☰</button>
-    <div class="topbar-title">
-      <strong id="tituloPagina">Cadastro de NRI</strong>
-      <span id="subtituloPagina">Identificação e rastreabilidade por palete</span>
-    </div>
-  </header>
+  <section class="login-screen" id="loginScreen">
+    <div class="login-decoration login-decoration-1"></div>
+    <div class="login-decoration login-decoration-2"></div>
 
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">Impressão de NRI</div>
-    <nav>
-      <button class="nav-item ativo" data-view="cadastro">Cadastro de NRI</button>
-      <button class="nav-item" data-view="pendentes">Impressões pendentes <span class="badge" id="badgePendentes">0</span></button>
-      <button class="nav-item" data-view="historico">Histórico / rastreabilidade</button>
-    </nav>
-  </aside>
-
-  <div class="overlay" id="overlay"></div>
-
-  <main class="content">
-    <section class="view ativo" id="view-cadastro">
-      <div class="page-head">
-        <div>
-          <div class="breadcrumb">Armazém / Impressão de NRI</div>
-          <h1>Cadastro de NRI</h1>
-          <p>Identificação e rastreabilidade por palete</p>
-        </div>
+    <div class="login-shell">
+      <div class="login-brand">
+        <div class="brand-mark">NRI</div>
+        <span>Armazém</span>
       </div>
 
-      <div class="card">
-        <div class="notice">Cada NRI identifica um palete e gera <strong>três etiquetas idênticas</strong> na mesma folha A4. O cadastro não altera estoque ou FEFO.</div>
+      <div class="login-card">
+        <div class="login-heading">
+          <span class="eyebrow">Acesso ao sistema</span>
+          <h1>Gestão de NRI</h1>
+          <p>Identificação, impressão e rastreabilidade de paletes.</p>
+        </div>
 
-        <form id="formCadastro" novalidate>
-          <div class="grid-2">
-            <div class="field">
-              <label for="unidade">Unidade *</label>
-              <select id="unidade" required></select>
-            </div>
-            <div class="field">
-              <label for="codigoProduto">Código do produto *</label>
-              <input id="codigoProduto" list="listaProdutos" inputmode="numeric" autocomplete="off" required placeholder="Digite o código">
-              <datalist id="listaProdutos"></datalist>
+        <form id="formLogin" autocomplete="on">
+          <div class="field">
+            <label for="loginUsuario">Usuário</label>
+            <div class="input-icon-wrap">
+              <span class="input-icon">●</span>
+              <input id="loginUsuario" autocomplete="username" required placeholder="Digite seu usuário">
             </div>
           </div>
 
-          <div class="produto-preview" id="produtoPreview">
-            <div class="produto-placeholder" id="produtoPlaceholder">O nome e a imagem serão preenchidos a partir do código.</div>
-            <img id="produtoImagem" alt="Imagem do produto" class="oculto">
-            <div id="produtoInfo" class="oculto">
-              <span id="produtoCodigo"></span>
-              <strong id="produtoNome"></strong>
+          <div class="field">
+            <label for="loginSenha">Senha</label>
+            <div class="input-icon-wrap">
+              <span class="input-icon">◆</span>
+              <input type="password" id="loginSenha" autocomplete="current-password" required placeholder="Digite sua senha">
+              <button type="button" class="password-toggle" id="btnMostrarSenha" aria-label="Mostrar ou ocultar senha">Mostrar</button>
             </div>
           </div>
 
-          <div class="grid-2">
-            <div class="field">
-              <label for="validade">Validade *</label>
-              <input type="date" id="validade" required>
-            </div>
-            <div class="field">
-              <label for="lote">Lote *</label>
-              <input id="lote" required autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="recebimento">Dia do recebimento *</label>
-              <input type="date" id="recebimento" required>
-            </div>
-            <div class="field">
-              <label for="bloqueio">Dia do bloqueio (validade - 30 dias)</label>
-              <input type="date" id="bloqueio" readonly>
-            </div>
-            <div class="field">
-              <label for="conferente">Conferente *</label>
-              <select id="conferente" required></select>
-            </div>
-            <div class="field">
-              <label for="turno">Turno *</label>
-              <select id="turno" required></select>
-            </div>
-            <div class="field">
-              <label for="hora">Hora *</label>
-              <input type="time" id="hora" step="60" required>
-            </div>
-            <div class="field">
-              <label for="motorista">Motorista da carreta *</label>
-              <select id="motorista" required></select>
-            </div>
-            <div class="field">
-              <label for="placa">Placa da carreta *</label>
-              <input id="placa" required maxlength="12" autocomplete="off" placeholder="Ex.: AAA2A222">
-            </div>
-            <div class="field">
-              <label for="fabrica">Fábrica *</label>
-              <select id="fabrica" required></select>
-            </div>
-            <div class="field">
-              <label for="caixas">Caixas recebidas no palete *</label>
-              <input type="number" id="caixas" min="1" step="1" required value="1">
-            </div>
-            <div class="field">
-              <label for="qtdPaletes">Quantidade de paletes iguais (NRIs) *</label>
-              <input type="number" id="qtdPaletes" min="1" max="99" step="1" required value="1">
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="reset" class="btn secundario" id="btnLimparCadastro">Limpar</button>
-            <button type="submit" class="btn primario" id="btnCadastrar">Cadastrar NRI(s)</button>
-          </div>
+          <button type="submit" class="btn primario btn-login" id="btnEntrar">Entrar</button>
+          <div class="login-message" id="loginMessage" aria-live="polite"></div>
         </form>
       </div>
-    </section>
 
-    <section class="view" id="view-pendentes">
-      <div class="page-head">
+      <p class="login-footer">Acesso restrito a usuários autorizados.</p>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell oculto">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Abrir menu">☰</button>
+      <div class="topbar-title">
+        <strong id="tituloPagina">Cadastro de NRI</strong>
+        <span id="subtituloPagina">Identificação e rastreabilidade por palete</span>
+      </div>
+
+      <div class="user-area">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-info">
+          <strong id="userNome">Usuário</strong>
+          <span id="userPerfil">COLABORADOR</span>
+        </div>
+        <button class="logout-btn" id="btnSair" title="Sair do sistema">Sair</button>
+      </div>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">NRI</div>
         <div>
-          <div class="breadcrumb">Armazém / Impressão de NRI</div>
-          <h1>Impressões pendentes</h1>
-          <p>Três etiquetas idênticas por NRI em uma folha A4</p>
+          <strong>Gestão de NRI</strong>
+          <span>Armazém</span>
         </div>
       </div>
 
-      <div class="card">
-        <div class="filters grid-2 compact">
-          <div class="field">
-            <label for="filtroPendentes">Produto, NRI, lote ou placa</label>
-            <input id="filtroPendentes" autocomplete="off">
-          </div>
-          <div class="field">
-            <label for="filtroUnidade">Unidade</label>
-            <select id="filtroUnidade"><option value="">Todas</option></select>
-          </div>
-        </div>
-
-        <div class="toolbar">
-          <button class="btn primario" id="btnImprimirTudo">Imprimir tudo (<span id="qtdPendentes">0</span>)</button>
-          <button class="btn secundario" id="btnImprimirSelecionadas">Imprimir selecionadas</button>
-          <button class="btn secundario" id="btnSelecionarVisiveis">Selecionar / desmarcar visíveis</button>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Selecionar</th>
-                <th>NRI / Produto</th>
-                <th>Lote / Validade</th>
-                <th>Recebimento / Bloqueio</th>
-                <th>Unidade / Transporte</th>
-                <th>Caixas</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyPendentes"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section class="view" id="view-historico">
-      <div class="page-head">
+      <div class="sidebar-user-mobile">
+        <div class="user-avatar" id="userAvatarMobile">U</div>
         <div>
-          <div class="breadcrumb">Armazém / Impressão de NRI</div>
-          <h1>Histórico / rastreabilidade</h1>
-          <p>Consulte NRIs antigos por lote, produto, placa, conferente ou período</p>
+          <strong id="userNomeMobile">Usuário</strong>
+          <span id="userPerfilMobile">COLABORADOR</span>
         </div>
       </div>
 
-      <div class="card">
-        <div class="filters grid-4 compact">
-          <div class="field span-2">
-            <label for="filtroHistorico">NRI, produto, lote, placa ou conferente</label>
-            <input id="filtroHistorico" autocomplete="off">
+      <nav>
+        <button class="nav-item ativo" data-view="cadastro">
+          <span class="nav-label"><span class="nav-icon">＋</span>Cadastro de NRI</span>
+        </button>
+        <button class="nav-item" data-view="pendentes">
+          <span class="nav-label"><span class="nav-icon">▣</span>Impressões pendentes</span>
+          <span class="badge" id="badgePendentes">0</span>
+        </button>
+        <button class="nav-item admin-only" data-view="historico">
+          <span class="nav-label"><span class="nav-icon">↺</span>Histórico / rastreabilidade</span>
+        </button>
+        <button class="nav-item admin-only" data-view="usuarios">
+          <span class="nav-label"><span class="nav-icon">♙</span>Usuários</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <button class="sidebar-logout" id="btnSairMobile">Sair da conta</button>
+      </div>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main class="content">
+      <section class="view ativo" id="view-cadastro">
+        <div class="page-head">
+          <div>
+            <div class="breadcrumb">Armazém <span>/</span> Impressão de NRI</div>
+            <h1>Cadastro de NRI</h1>
+            <p>Identificação e rastreabilidade por palete.</p>
           </div>
-          <div class="field">
-            <label for="filtroStatus">Status</label>
-            <select id="filtroStatus">
-              <option value="">Todos</option>
-              <option value="PENDENTE">Pendente</option>
-              <option value="IMPRESSO">Impresso</option>
-              <option value="REMOVIDO">Removido</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="filtroHistUnidade">Unidade</label>
-            <select id="filtroHistUnidade"><option value="">Todas</option></select>
-          </div>
-          <div class="field">
-            <label for="filtroDe">De</label>
-            <input type="date" id="filtroDe">
-          </div>
-          <div class="field">
-            <label for="filtroAte">Até</label>
-            <input type="date" id="filtroAte">
-          </div>
-          <div class="field span-2 alinhado-fim">
-            <button class="btn secundario" id="btnLimparHistorico">Limpar filtros</button>
-          </div>
+          <div class="page-chip">Cadastro</div>
         </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Cadastro</th>
-                <th>NRI / Produto</th>
-                <th>Lote / Validade</th>
-                <th>Unidade / Transporte</th>
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyHistorico"></tbody>
-          </table>
+        <div class="card">
+          <div class="notice">
+            <div class="notice-icon">i</div>
+            <div>Cada NRI identifica um palete e gera <strong>três etiquetas idênticas</strong> na mesma folha A4. O cadastro não altera estoque ou FEFO.</div>
+          </div>
+
+          <div class="quick-fill-card">
+            <div class="quick-fill-copy">
+              <div class="quick-fill-icon">↻</div>
+              <div>
+                <strong>Reaproveitar dados da carreta</strong>
+                <span>Preencha unidade, recebimento, conferente, turno, hora, motorista, placa e fábrica com base no seu último cadastro.</span>
+              </div>
+            </div>
+            <button type="button" class="btn quick-fill-btn" id="btnUltimoCadastro">Usar dados do último cadastro</button>
+          </div>
+
+          <form id="formCadastro" novalidate>
+            <div class="section-title">Produto e unidade</div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="unidade">Unidade *</label>
+                <select id="unidade" required></select>
+              </div>
+              <div class="field">
+                <label for="codigoProduto">Código do produto *</label>
+                <input id="codigoProduto" list="listaProdutos" inputmode="numeric" autocomplete="off" required placeholder="Digite o código">
+                <datalist id="listaProdutos"></datalist>
+              </div>
+            </div>
+
+            <div class="produto-preview" id="produtoPreview">
+              <div class="produto-placeholder" id="produtoPlaceholder">
+                <span class="produto-placeholder-icon">▧</span>
+                <span>O nome e a imagem serão preenchidos a partir do código.</span>
+              </div>
+              <img id="produtoImagem" alt="Imagem do produto" class="oculto">
+              <div id="produtoInfo" class="oculto">
+                <span id="produtoCodigo"></span>
+                <strong id="produtoNome"></strong>
+              </div>
+            </div>
+
+            <div class="section-title">Rastreabilidade</div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="validade">Validade *</label>
+                <input type="date" id="validade" required>
+              </div>
+              <div class="field">
+                <label for="lote">Lote *</label>
+                <input id="lote" required autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="recebimento">Dia do recebimento *</label>
+                <input type="date" id="recebimento" required>
+              </div>
+              <div class="field">
+                <label for="bloqueio">Dia do bloqueio (validade - 30 dias)</label>
+                <input type="date" id="bloqueio" readonly>
+              </div>
+              <div class="field">
+                <label for="conferente">Conferente *</label>
+                <select id="conferente" required></select>
+              </div>
+              <div class="field">
+                <label for="turno">Turno *</label>
+                <select id="turno" required></select>
+              </div>
+              <div class="field">
+                <label for="hora">Hora *</label>
+                <input type="time" id="hora" step="60" required>
+              </div>
+              <div class="field">
+                <label for="motorista">Motorista da carreta *</label>
+                <select id="motorista" required></select>
+              </div>
+              <div class="field">
+                <label for="placa">Placa da carreta *</label>
+                <input id="placa" required maxlength="12" autocomplete="off" placeholder="Ex.: AAA2A222">
+              </div>
+              <div class="field">
+                <label for="fabrica">Fábrica *</label>
+                <select id="fabrica" required></select>
+              </div>
+              <div class="field">
+                <label for="caixas">Caixas recebidas no palete *</label>
+                <input type="number" id="caixas" min="1" step="1" required value="1">
+              </div>
+              <div class="field">
+                <label for="qtdPaletes">Quantidade de paletes iguais (NRIs) *</label>
+                <input type="number" id="qtdPaletes" min="1" max="99" step="1" required value="1">
+              </div>
+            </div>
+
+            <div class="audit-hint">
+              <span class="audit-dot"></span>
+              O usuário autenticado será registrado automaticamente como responsável pelo cadastro/contagem.
+            </div>
+
+            <div class="form-actions">
+              <button type="reset" class="btn secundario" id="btnLimparCadastro">Limpar</button>
+              <button type="submit" class="btn primario" id="btnCadastrar">Cadastrar NRI(s)</button>
+            </div>
+          </form>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
 
-  <div class="toast" id="toast"></div>
+      <section class="view" id="view-pendentes">
+        <div class="page-head">
+          <div>
+            <div class="breadcrumb">Armazém <span>/</span> Impressão de NRI</div>
+            <h1>Impressões pendentes</h1>
+            <p>Três etiquetas idênticas por NRI em uma folha A4.</p>
+          </div>
+          <div class="page-chip">Fila de impressão</div>
+        </div>
 
-  <div class="modal" id="modalPreview" aria-hidden="true">
-    <div class="modal-box modal-lg">
-      <div class="modal-head">
-        <strong>Visualização do NRI</strong>
-        <button class="icon-btn" data-close="modalPreview">×</button>
-      </div>
-      <div class="modal-body" id="previewConteudo"></div>
-      <div class="modal-actions">
-        <button class="btn secundario" data-close="modalPreview">Fechar</button>
-        <button class="btn primario" id="btnImprimirPreview">Imprimir 3 etiquetas</button>
+        <div class="card">
+          <div class="filters grid-2 compact">
+            <div class="field">
+              <label for="filtroPendentes">Produto, NRI, lote ou placa</label>
+              <input id="filtroPendentes" autocomplete="off" placeholder="Pesquisar...">
+            </div>
+            <div class="field">
+              <label for="filtroUnidade">Unidade</label>
+              <select id="filtroUnidade"><option value="">Todas</option></select>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button class="btn primario" id="btnImprimirTudo">Imprimir tudo (<span id="qtdPendentes">0</span>)</button>
+            <button class="btn secundario" id="btnImprimirSelecionadas">Imprimir selecionadas</button>
+            <button class="btn secundario" id="btnSelecionarVisiveis">Selecionar / desmarcar visíveis</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Selecionar</th>
+                  <th>NRI / Produto</th>
+                  <th>Lote / Validade</th>
+                  <th>Recebimento / Bloqueio</th>
+                  <th>Unidade / Transporte</th>
+                  <th>Caixas</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyPendentes"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view admin-only" id="view-historico">
+        <div class="page-head">
+          <div>
+            <div class="breadcrumb">Armazém <span>/</span> Impressão de NRI</div>
+            <h1>Histórico / rastreabilidade</h1>
+            <p>Consulte NRIs antigos por lote, produto, usuário, placa, conferente ou período.</p>
+          </div>
+          <div class="page-chip admin-chip">Somente Admin</div>
+        </div>
+
+        <div class="card">
+          <div class="filters grid-4 compact">
+            <div class="field span-2">
+              <label for="filtroHistorico">NRI, produto, lote, placa, conferente ou usuário</label>
+              <input id="filtroHistorico" autocomplete="off" placeholder="Pesquisar rastreabilidade...">
+            </div>
+            <div class="field">
+              <label for="filtroStatus">Status</label>
+              <select id="filtroStatus">
+                <option value="">Todos</option>
+                <option value="PENDENTE">Pendente</option>
+                <option value="IMPRESSO">Impresso</option>
+                <option value="REMOVIDO">Removido</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filtroHistUnidade">Unidade</label>
+              <select id="filtroHistUnidade"><option value="">Todas</option></select>
+            </div>
+            <div class="field">
+              <label for="filtroDe">De</label>
+              <input type="date" id="filtroDe">
+            </div>
+            <div class="field">
+              <label for="filtroAte">Até</label>
+              <input type="date" id="filtroAte">
+            </div>
+            <div class="field span-2 alinhado-fim">
+              <button class="btn secundario" id="btnLimparHistorico">Limpar filtros</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cadastro</th>
+                  <th>NRI / Produto</th>
+                  <th>Lote / Validade</th>
+                  <th>Unidade / Transporte</th>
+                  <th>Usuário / Conferente</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyHistorico"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view admin-only" id="view-usuarios">
+        <div class="page-head">
+          <div>
+            <div class="breadcrumb">Administração <span>/</span> Usuários</div>
+            <h1>Usuários e perfis</h1>
+            <p>Gerencie quem pode acessar o sistema e o nível de permissão.</p>
+          </div>
+          <div class="page-chip admin-chip">Somente Admin</div>
+        </div>
+
+        <div class="admin-grid">
+          <div class="card">
+            <div class="section-title">Cadastrar / editar usuário</div>
+            <form id="formUsuario" novalidate>
+              <input type="hidden" id="usuarioOriginal">
+              <div class="field">
+                <label for="novoUsuario">Usuário *</label>
+                <input id="novoUsuario" autocomplete="off" placeholder="Ex.: beatriz.nogueira">
+              </div>
+              <div class="field">
+                <label for="novoNome">Nome *</label>
+                <input id="novoNome" autocomplete="off" placeholder="Nome completo">
+              </div>
+              <div class="field">
+                <label for="novoPerfil">Perfil *</label>
+                <select id="novoPerfil">
+                  <option value="COLABORADOR">Colaborador</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="novaSenha">Senha <span id="senhaOpcional"></span></label>
+                <input type="password" id="novaSenha" autocomplete="new-password" placeholder="Mínimo de 6 caracteres">
+              </div>
+              <label class="check-line">
+                <input type="checkbox" id="novoAtivo" checked>
+                <span>Usuário ativo</span>
+              </label>
+              <div class="form-actions">
+                <button type="button" class="btn secundario" id="btnCancelarUsuario">Limpar</button>
+                <button type="submit" class="btn primario" id="btnSalvarUsuario">Salvar usuário</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card user-list-card">
+            <div class="section-title">Usuários cadastrados</div>
+            <div class="table-wrap user-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Nome</th>
+                    <th>Perfil</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyUsuarios"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="modal" id="modalPreview" aria-hidden="true">
+      <div class="modal-box modal-lg">
+        <div class="modal-head">
+          <div>
+            <span class="eyebrow">Pré-visualização</span>
+            <strong>Etiqueta NRI</strong>
+          </div>
+          <button class="icon-btn" data-close="modalPreview">×</button>
+        </div>
+        <div class="modal-body preview-background" id="previewConteudo"></div>
+        <div class="modal-actions">
+          <button class="btn secundario" data-close="modalPreview">Fechar</button>
+          <button class="btn primario" id="btnImprimirPreview">Imprimir 3 etiquetas</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="modal" id="modalConfirmacaoImpressao" aria-hidden="true">
-    <div class="modal-box">
-      <div class="modal-head"><strong>Resultado da impressão</strong></div>
-      <div class="modal-body">
-        <p>O diálogo da impressora foi fechado.</p>
-        <p>Confirme somente se as etiquetas realmente foram impressas. Se você cancelou a impressão, mantenha os NRIs pendentes.</p>
-      </div>
-      <div class="modal-actions coluna-mobile">
-        <button class="btn secundario" id="btnImpressaoCancelada">Impressão cancelada</button>
-        <button class="btn primario" id="btnImpressaoConcluida">Impressão concluída</button>
+    <div class="modal" id="modalConfirmacaoImpressao" aria-hidden="true">
+      <div class="modal-box">
+        <div class="modal-head"><strong>Resultado da impressão</strong></div>
+        <div class="modal-body">
+          <p>O diálogo da impressora foi fechado.</p>
+          <p>Confirme somente se as etiquetas realmente foram impressas. Se você cancelou a impressão, mantenha os NRIs pendentes.</p>
+        </div>
+        <div class="modal-actions coluna-mobile">
+          <button class="btn secundario" id="btnImpressaoCancelada">Impressão cancelada</button>
+          <button class="btn primario" id="btnImpressaoConcluida">Impressão concluída</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <iframe id="printFrame" class="print-frame" title="Área de impressão"></iframe>
+    <iframe id="printFrame" class="print-frame" title="Área de impressão"></iframe>
+  </div>
 
   <script src="script.js"></script>
 </body>
