@@ -73,3 +73,18 @@ button,input,select{font:inherit}
 .login-submit{width:100%;height:50px;margin-top:6px;padding:0 16px;border:0;border-radius:13px;background:linear-gradient(180deg,#0d72c5,#075ca8);color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:900;cursor:pointer;box-shadow:0 9px 22px rgba(7,92,168,.23);transition:.16s}.login-submit:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.03)}.login-submit:disabled{opacity:.65;cursor:wait}.login-arrow{font-size:18px}.login-message{min-height:19px;margin-top:12px;color:#c03838;text-align:center;font-size:11px;font-weight:800;line-height:1.45}.login-help{margin-top:24px;padding-top:18px;border-top:1px solid #edf2f6;display:flex;align-items:center;justify-content:center;gap:7px;color:#8495a5;font-size:10px}
 @media(max-width:760px){.login-screen{padding:16px}.login-container{grid-template-columns:1fr;min-height:auto;max-width:470px;border-radius:24px}.login-panel-brand{display:none}.login-panel-form{padding:32px 25px}.login-mobile-brand{display:flex}.login-heading h2{font-size:28px}.login-input-wrap input{height:49px}.login-submit{height:49px}}
 @media(max-width:390px){.login-screen{padding:10px}.login-panel-form{padding:27px 18px}.login-container{border-radius:20px}.login-heading h2{font-size:26px}}
+
+
+/* V10 - AJUSTES VISUAIS DA NRI */
+.nri-preview-label{color:#686868!important;border-color:#777!important}
+.nri-preview-label *{border-color:#777!important}
+.nri-top{min-height:44px!important}
+.nri-code-label{font-size:22px!important;font-weight:900!important;padding:5px 11px!important;color:#686868!important}
+.nri-code-value{font-size:38px!important;font-weight:1000!important;padding:2px 13px!important;color:#686868!important}
+.nri-id{color:#686868!important}
+.nri-product-title strong,.nri-mini-cell,.nri-mini-cell b,.nri-validade span,.nri-date-cell b,.nri-date-cell strong,.nri-meta-cell b,.nri-meta-cell span,.nri-bottom>div,.nri-bottom b{color:#686868!important}
+.nri-validade strong{color:#000!important}
+.nri-meta{height:29px!important;min-height:29px!important;align-items:stretch!important}
+.nri-meta-cell{height:29px!important;display:flex!important;flex-direction:column!important;justify-content:center!important}
+.nri-meta-cell b{font-size:10px!important;line-height:1!important;padding:0 3px 1px!important;margin:0!important}
+.nri-meta-cell span{font-size:12px!important;line-height:1!important;padding:1px 3px 0!important;margin:0!important}
