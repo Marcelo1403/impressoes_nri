@@ -78,9 +78,14 @@ button,input,select{font:inherit}
 /* V10 - AJUSTES VISUAIS DA NRI */
 .nri-preview-label{color:#686868!important;border-color:#777!important}
 .nri-preview-label *{border-color:#777!important}
-.nri-top{min-height:44px!important}
-.nri-code-label{font-size:22px!important;font-weight:900!important;padding:5px 11px!important;color:#686868!important}
-.nri-code-value{font-size:38px!important;font-weight:1000!important;padding:2px 13px!important;color:#686868!important}
+.nri-top,.nri-code-label{border-width:2px!important}
+.nri-mini-strip{min-height:24px!important}
+.nri-mini-cell{padding-top:3px!important;padding-bottom:3px!important}
+.nri-bottom{min-height:24px!important}
+.nri-bottom>div{padding-top:3px!important;padding-bottom:3px!important}
+.nri-top{min-height:50px!important}
+.nri-code-label{font-size:26px!important;font-weight:1000!important;padding:6px 12px!important;color:#686868!important;border-right:2px solid #777!important}
+.nri-code-value{font-size:44px!important;font-weight:1000!important;padding:2px 14px!important;color:#000!important}
 .nri-id{color:#686868!important}
 .nri-product-title strong,.nri-mini-cell,.nri-mini-cell b,.nri-validade span,.nri-date-cell b,.nri-date-cell strong,.nri-meta-cell b,.nri-meta-cell span,.nri-bottom>div,.nri-bottom b{color:#686868!important}
 .nri-validade strong{color:#000!important}
