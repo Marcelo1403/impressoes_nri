@@ -545,7 +545,7 @@ button,input,select{font:inherit}
   </div>
 
   <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKUbmHswmXauzd6dZVOLxzSVL9RwE63ipMzbVXK1ZqolGzVymOpa2zDrWwvteXZCRg/exec";
+const WEB_APP_URL = "COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT";
 const PASTA_IMAGENS = "imagens_produtos";
 const EXTENSOES_IMAGEM = ["png","jpg","jpeg","webp"];
 const TZ = "America/Fortaleza";
@@ -685,7 +685,7 @@ async function fazerLogin(ev){
   }catch(e){
     const msg = String(e.message || e || "");
     if(msg.includes("Failed to fetch") || msg.includes("NetworkError")){
-      mostrarMensagemLogin("Não foi possível conectar ao Apps Script. Confirme a URL /exec e publique uma nova versão da implantação.");
+      mostrarMensagemLogin("Não foi possível concluir o login. Confirme se o Apps Script publicado está na versão 6.0 e tente novamente.");
       definirStatusBackend("error","Falha de conexão com o Apps Script");
     }else{
       mostrarMensagemLogin(msg || "Usuário ou senha inválidos.");
@@ -1102,11 +1102,60 @@ async function getApi(acao, extras={}){
 }
 
 async function postApi(payload, semToken=false){
-  const body = semToken ? payload : {...payload,token:tokenSessao};
-  const r = await fetch(WEB_APP_URL,{method:"POST",body:JSON.stringify(body)});
-  const d = await lerRespostaJson(r);
-  if(d.status === "unauthorized") throw new Error("SESSAO_EXPIRADA");
-  return d;
+  const requestId = gerarRequestId();
+  const body = semToken
+    ? {...payload,requestId}
+    : {...payload,token:tokenSessao,requestId};
+
+  /*
+    O Apps Script usa ContentService, que redireciona a resposta para
+    script.googleusercontent.com. Em alguns navegadores, ler diretamente
+    a resposta de um POST iniciado no GitHub Pages pode falhar por causa
+    desse redirecionamento. Por isso o POST é enviado em modo no-cors e
+    o resultado é consultado logo em seguida por GET usando requestId.
+  */
+  try{
+    await fetch(WEB_APP_URL,{
+      method:"POST",
+      mode:"no-cors",
+      body:JSON.stringify(body)
+    });
+  }catch(_e){
+    throw new Error("Não foi possível enviar a solicitação ao Apps Script.");
+  }
+
+  const inicio = Date.now();
+  const timeoutMs = 30000;
+
+  while(Date.now() - inicio < timeoutMs){
+    await esperar(350);
+
+    const qs = new URLSearchParams({
+      acao:"resultadoPost",
+      requestId,
+      _:Date.now().toString()
+    });
+
+    const r = await fetch(`${WEB_APP_URL}?${qs.toString()}`,{cache:"no-store"});
+    const d = await lerRespostaJson(r);
+
+    if(d.status === "processing") continue;
+    if(d.status === "unauthorized") throw new Error("SESSAO_EXPIRADA");
+    return d;
+  }
+
+  throw new Error("O servidor demorou mais que o esperado para concluir a operação. Tente novamente.");
+}
+
+function gerarRequestId(){
+  if(window.crypto && typeof window.crypto.randomUUID === "function"){
+    return window.crypto.randomUUID();
+  }
+  return "nri-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+}
+
+function esperar(ms){
+  return new Promise(resolve => setTimeout(resolve,ms));
 }
 
 async function lerRespostaJson(response){
