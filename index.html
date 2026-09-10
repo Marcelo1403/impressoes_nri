@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b3f73">
+  <title>Impressão de NRI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menu">☰</button>
+    <div class="topbar-title">
+      <strong id="tituloPagina">Cadastro de NRI</strong>
+      <span id="subtituloPagina">Identificação e rastreabilidade por palete</span>
+    </div>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">Impressão de NRI</div>
+    <nav>
+      <button class="nav-item ativo" data-view="cadastro">Cadastro de NRI</button>
+      <button class="nav-item" data-view="pendentes">Impressões pendentes <span class="badge" id="badgePendentes">0</span></button>
+      <button class="nav-item" data-view="historico">Histórico / rastreabilidade</button>
+    </nav>
+  </aside>
+
+  <div class="overlay" id="overlay"></div>
+
+  <main class="content">
+    <section class="view ativo" id="view-cadastro">
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb">Armazém / Impressão de NRI</div>
+          <h1>Cadastro de NRI</h1>
+          <p>Identificação e rastreabilidade por palete</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="notice">Cada NRI identifica um palete e gera <strong>três etiquetas idênticas</strong> na mesma folha A4. O cadastro não altera estoque ou FEFO.</div>
+
+        <form id="formCadastro" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label for="unidade">Unidade *</label>
+              <select id="unidade" required></select>
+            </div>
+            <div class="field">
+              <label for="codigoProduto">Código do produto *</label>
+              <input id="codigoProduto" list="listaProdutos" inputmode="numeric" autocomplete="off" required placeholder="Digite o código">
+              <datalist id="listaProdutos"></datalist>
+            </div>
+          </div>
+
+          <div class="produto-preview" id="produtoPreview">
+            <div class="produto-placeholder" id="produtoPlaceholder">O nome e a imagem serão preenchidos a partir do código.</div>
+            <img id="produtoImagem" alt="Imagem do produto" class="oculto">
+            <div id="produtoInfo" class="oculto">
+              <span id="produtoCodigo"></span>
+              <strong id="produtoNome"></strong>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="validade">Validade *</label>
+              <input type="date" id="validade" required>
+            </div>
+            <div class="field">
+              <label for="lote">Lote *</label>
+              <input id="lote" required autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="recebimento">Dia do recebimento *</label>
+              <input type="date" id="recebimento" required>
+            </div>
+            <div class="field">
+              <label for="bloqueio">Dia do bloqueio (validade - 30 dias)</label>
+              <input type="date" id="bloqueio" readonly>
+            </div>
+            <div class="field">
+              <label for="conferente">Conferente *</label>
+              <select id="conferente" required></select>
+            </div>
+            <div class="field">
+              <label for="turno">Turno *</label>
+              <select id="turno" required></select>
+            </div>
+            <div class="field">
+              <label for="hora">Hora *</label>
+              <input type="time" id="hora" step="60" required>
+            </div>
+            <div class="field">
+              <label for="motorista">Motorista da carreta *</label>
+              <select id="motorista" required></select>
+            </div>
+            <div class="field">
+              <label for="placa">Placa da carreta *</label>
+              <input id="placa" required maxlength="12" autocomplete="off" placeholder="Ex.: AAA2A222">
+            </div>
+            <div class="field">
+              <label for="fabrica">Fábrica *</label>
+              <select id="fabrica" required></select>
+            </div>
+            <div class="field">
+              <label for="caixas">Caixas recebidas no palete *</label>
+              <input type="number" id="caixas" min="1" step="1" required value="1">
+            </div>
+            <div class="field">
+              <label for="qtdPaletes">Quantidade de paletes iguais (NRIs) *</label>
+              <input type="number" id="qtdPaletes" min="1" max="99" step="1" required value="1">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="reset" class="btn secundario" id="btnLimparCadastro">Limpar</button>
+            <button type="submit" class="btn primario" id="btnCadastrar">Cadastrar NRI(s)</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="view" id="view-pendentes">
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb">Armazém / Impressão de NRI</div>
+          <h1>Impressões pendentes</h1>
+          <p>Três etiquetas idênticas por NRI em uma folha A4</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="filters grid-2 compact">
+          <div class="field">
+            <label for="filtroPendentes">Produto, NRI, lote ou placa</label>
+            <input id="filtroPendentes" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="filtroUnidade">Unidade</label>
+            <select id="filtroUnidade"><option value="">Todas</option></select>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn primario" id="btnImprimirTudo">Imprimir tudo (<span id="qtdPendentes">0</span>)</button>
+          <button class="btn secundario" id="btnImprimirSelecionadas">Imprimir selecionadas</button>
+          <button class="btn secundario" id="btnSelecionarVisiveis">Selecionar / desmarcar visíveis</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Selecionar</th>
+                <th>NRI / Produto</th>
+                <th>Lote / Validade</th>
+                <th>Recebimento / Bloqueio</th>
+                <th>Unidade / Transporte</th>
+                <th>Caixas</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyPendentes"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-historico">
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb">Armazém / Impressão de NRI</div>
+          <h1>Histórico / rastreabilidade</h1>
+          <p>Consulte NRIs antigos por lote, produto, placa, conferente ou período</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="filters grid-4 compact">
+          <div class="field span-2">
+            <label for="filtroHistorico">NRI, produto, lote, placa ou conferente</label>
+            <input id="filtroHistorico" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="filtroStatus">Status</label>
+            <select id="filtroStatus">
+              <option value="">Todos</option>
+              <option value="PENDENTE">Pendente</option>
+              <option value="IMPRESSO">Impresso</option>
+              <option value="REMOVIDO">Removido</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filtroHistUnidade">Unidade</label>
+            <select id="filtroHistUnidade"><option value="">Todas</option></select>
+          </div>
+          <div class="field">
+            <label for="filtroDe">De</label>
+            <input type="date" id="filtroDe">
+          </div>
+          <div class="field">
+            <label for="filtroAte">Até</label>
+            <input type="date" id="filtroAte">
+          </div>
+          <div class="field span-2 alinhado-fim">
+            <button class="btn secundario" id="btnLimparHistorico">Limpar filtros</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cadastro</th>
+                <th>NRI / Produto</th>
+                <th>Lote / Validade</th>
+                <th>Unidade / Transporte</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyHistorico"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal" id="modalPreview" aria-hidden="true">
+    <div class="modal-box modal-lg">
+      <div class="modal-head">
+        <strong>Visualização do NRI</strong>
+        <button class="icon-btn" data-close="modalPreview">×</button>
+      </div>
+      <div class="modal-body" id="previewConteudo"></div>
+      <div class="modal-actions">
+        <button class="btn secundario" data-close="modalPreview">Fechar</button>
+        <button class="btn primario" id="btnImprimirPreview">Imprimir 3 etiquetas</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalConfirmacaoImpressao" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-head"><strong>Resultado da impressão</strong></div>
+      <div class="modal-body">
+        <p>O diálogo da impressora foi fechado.</p>
+        <p>Confirme somente se as etiquetas realmente foram impressas. Se você cancelou a impressão, mantenha os NRIs pendentes.</p>
+      </div>
+      <div class="modal-actions coluna-mobile">
+        <button class="btn secundario" id="btnImpressaoCancelada">Impressão cancelada</button>
+        <button class="btn primario" id="btnImpressaoConcluida">Impressão concluída</button>
+      </div>
+    </div>
+  </div>
+
+  <iframe id="printFrame" class="print-frame" title="Área de impressão"></iframe>
+
+  <script src="script.js"></script>
+</body>
+</html>
