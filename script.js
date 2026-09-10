@@ -1,4 +1,4 @@
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKUbmHswmXauzd6dZVOLxzSVL9RwE63ipMzbVXK1ZqolGzVymOpa2zDrWwvteXZCRg/exec";
+const WEB_APP_URL = "COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT";
 const PASTA_IMAGENS = "imagens_produtos";
 const EXTENSOES_IMAGEM = ["png","jpg","jpeg","webp"];
 const TZ = "America/Fortaleza";
@@ -21,8 +21,42 @@ const isAdmin = () => usuarioAtual && usuarioAtual.perfil === "ADMIN";
 document.addEventListener("DOMContentLoaded", async () => {
   configurarEventosBase();
   preencherDatasPadrao();
+  await verificarBackend();
   await restaurarSessao();
 });
+
+
+async function verificarBackend(){
+  const badge = $("backendStatus");
+  if(!badge) return;
+  if(!urlConfigurada()){
+    definirStatusBackend("error","URL do Apps Script não configurada");
+    return;
+  }
+  try{
+    const qs = new URLSearchParams({acao:"health",_:Date.now().toString()});
+    const r = await fetch(`${WEB_APP_URL}?${qs.toString()}`,{cache:"no-store"});
+    const txt = await r.text();
+    let d;
+    try{ d = JSON.parse(txt); }catch(_e){ throw new Error("Resposta inválida do servidor"); }
+    if(d.status === "success" && d.auth === true){
+      definirStatusBackend("ok","Sistema conectado");
+    }else{
+      definirStatusBackend("error","Apps Script precisa ser atualizado/publicado");
+    }
+  }catch(e){
+    definirStatusBackend("error","Não foi possível conectar ao Apps Script");
+  }
+}
+
+function definirStatusBackend(tipo,texto){
+  const badge = $("backendStatus");
+  if(!badge) return;
+  badge.classList.remove("ok","error","checking");
+  badge.classList.add(tipo || "checking");
+  const textoEl = badge.querySelector("span:last-child");
+  if(textoEl) textoEl.textContent = texto;
+}
 
 function configurarEventosBase(){
   $("formLogin").addEventListener("submit", fazerLogin);
@@ -102,7 +136,13 @@ async function fazerLogin(ev){
     $("loginSenha").value = "";
     await iniciarAplicacao();
   }catch(e){
-    mostrarMensagemLogin(e.message || "Usuário ou senha inválidos.");
+    const msg = String(e.message || e || "");
+    if(msg.includes("Failed to fetch") || msg.includes("NetworkError")){
+      mostrarMensagemLogin("Não foi possível conectar ao Apps Script. Confirme a URL /exec e publique uma nova versão da implantação.");
+      definirStatusBackend("error","Falha de conexão com o Apps Script");
+    }else{
+      mostrarMensagemLogin(msg || "Usuário ou senha inválidos.");
+    }
   }finally{
     $("btnEntrar").disabled = false;
     $("btnEntrar").textContent = "Entrar";
@@ -509,17 +549,26 @@ function htmlEtiqueta(r, paraImpressao){
 async function getApi(acao, extras={}){
   const qs = new URLSearchParams({acao,token:tokenSessao,...extras,_:Date.now().toString()});
   const r = await fetch(`${WEB_APP_URL}?${qs.toString()}`,{cache:"no-store"});
-  const d = await r.json();
+  const d = await lerRespostaJson(r);
   if(d.status === "unauthorized") throw new Error("SESSAO_EXPIRADA");
   return d;
 }
 
 async function postApi(payload, semToken=false){
   const body = semToken ? payload : {...payload,token:tokenSessao};
-  const r=await fetch(WEB_APP_URL,{method:"POST",body:JSON.stringify(body)});
-  const d=await r.json();
+  const r = await fetch(WEB_APP_URL,{method:"POST",body:JSON.stringify(body)});
+  const d = await lerRespostaJson(r);
   if(d.status === "unauthorized") throw new Error("SESSAO_EXPIRADA");
   return d;
+}
+
+async function lerRespostaJson(response){
+  const txt = await response.text();
+  try{
+    return JSON.parse(txt);
+  }catch(_e){
+    throw new Error("O Apps Script retornou uma resposta inválida. Verifique se a implantação foi publicada como App da Web e se a URL termina em /exec.");
+  }
 }
 
 function tratarErroApi(e){
