@@ -2,40 +2,180 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKUbmHswmXauzd6dZV
 const PASTA_IMAGENS = "imagens_produtos";
 const EXTENSOES_IMAGEM = ["png","jpg","jpeg","webp"];
 const TZ = "America/Fortaleza";
+const SESSION_KEY = "nri_session_v2";
 
 let config = { produtos: [], unidades: [], conferentes: [], turnos: [], motoristas: [], fabricas: [] };
 let pendentes = [];
 let historico = [];
+let usuarios = [];
+let usuarioAtual = null;
+let tokenSessao = "";
 let produtoAtual = null;
 let previewAtual = null;
 let impressaoPendente = null;
 let enviandoCadastro = false;
 
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
+const isAdmin = () => usuarioAtual && usuarioAtual.perfil === "ADMIN";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  configurarNavegacao();
-  configurarEventos();
+  configurarEventosBase();
   preencherDatasPadrao();
-  await carregarConfig();
-  await Promise.all([carregarPendentes(), carregarHistorico()]);
+  await restaurarSessao();
 });
 
-function configurarNavegacao(){
+function configurarEventosBase(){
+  $("formLogin").addEventListener("submit", fazerLogin);
+  $("btnMostrarSenha").addEventListener("click", alternarSenhaLogin);
+  $("btnSair").addEventListener("click", sair);
+  $("btnSairMobile").addEventListener("click", sair);
+
   document.querySelectorAll(".nav-item").forEach(btn => btn.addEventListener("click", () => abrirView(btn.dataset.view)));
   $("menuBtn").addEventListener("click", () => alternarMenu(true));
   $("overlay").addEventListener("click", () => alternarMenu(false));
+
+  $("codigoProduto").addEventListener("input", localizarProdutoDigitado);
+  $("validade").addEventListener("change", atualizarBloqueio);
+  $("formCadastro").addEventListener("submit", cadastrarNris);
+  $("formCadastro").addEventListener("reset", () => setTimeout(() => { produtoAtual=null; resetPreviewProduto(); preencherDatasPadrao(); }, 0));
+  $("btnUltimoCadastro").addEventListener("click", preencherComUltimoCadastro);
+  $("placa").addEventListener("input", e => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""));
+
+  $("filtroPendentes").addEventListener("input", renderPendentes);
+  $("filtroUnidade").addEventListener("change", renderPendentes);
+  $("btnImprimirTudo").addEventListener("click", () => iniciarImpressao(filtrarPendentes()));
+  $("btnImprimirSelecionadas").addEventListener("click", () => iniciarImpressao(obterPendentesSelecionadas()));
+  $("btnSelecionarVisiveis").addEventListener("click", alternarSelecionadosVisiveis);
+
+  ["filtroHistorico","filtroStatus","filtroHistUnidade","filtroDe","filtroAte"].forEach(id => $(id).addEventListener(id === "filtroHistorico" ? "input" : "change", renderHistorico));
+  $("btnLimparHistorico").addEventListener("click", limparFiltrosHistorico);
+
+  document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", () => fecharModal(btn.dataset.close)));
+  $("btnImprimirPreview").addEventListener("click", () => previewAtual && iniciarImpressao([previewAtual], previewAtual.status === "IMPRESSO"));
+  $("btnImpressaoConcluida").addEventListener("click", confirmarImpressaoConcluida);
+  $("btnImpressaoCancelada").addEventListener("click", confirmarImpressaoCancelada);
+
+  $("formUsuario").addEventListener("submit", salvarUsuario);
+  $("btnCancelarUsuario").addEventListener("click", limparFormularioUsuario);
 }
 
+async function restaurarSessao(){
+  if(!urlConfigurada()){
+    mostrarLogin("Configure a URL do Apps Script no arquivo script.js.");
+    return;
+  }
+
+  const salva = localStorage.getItem(SESSION_KEY);
+  if(!salva){ mostrarLogin(); return; }
+
+  try{
+    const sessao = JSON.parse(salva);
+    tokenSessao = sessao.token || "";
+    const d = await getApi("sessao");
+    if(d.status !== "success") throw new Error(d.message || "Sessão expirada");
+    usuarioAtual = d.usuario;
+    await iniciarAplicacao();
+  }catch(e){
+    limparSessaoLocal();
+    mostrarLogin("Sua sessão expirou. Entre novamente.");
+  }
+}
+
+async function fazerLogin(ev){
+  ev.preventDefault();
+  if(!urlConfigurada()) return mostrarMensagemLogin("Configure a URL do Apps Script no script.js.");
+
+  const usuario = $("loginUsuario").value.trim();
+  const senha = $("loginSenha").value;
+  if(!usuario || !senha) return mostrarMensagemLogin("Informe usuário e senha.");
+
+  $("btnEntrar").disabled = true;
+  $("btnEntrar").textContent = "Entrando...";
+  mostrarMensagemLogin("");
+
+  try{
+    const d = await postApi({acao:"login",usuario,senha}, true);
+    if(d.status !== "success") throw new Error(d.message || "Falha no login.");
+    tokenSessao = d.token;
+    usuarioAtual = d.usuario;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({token:tokenSessao,usuario:usuarioAtual}));
+    $("loginSenha").value = "";
+    await iniciarAplicacao();
+  }catch(e){
+    mostrarMensagemLogin(e.message || "Usuário ou senha inválidos.");
+  }finally{
+    $("btnEntrar").disabled = false;
+    $("btnEntrar").textContent = "Entrar";
+  }
+}
+
+async function iniciarAplicacao(){
+  aplicarPerfil();
+  $("loginScreen").classList.add("oculto");
+  $("appShell").classList.remove("oculto");
+  abrirView("cadastro");
+
+  await carregarConfig();
+  await carregarPendentes();
+  if(isAdmin()){
+    await Promise.all([carregarHistorico(), carregarUsuarios()]);
+  }
+}
+
+function aplicarPerfil(){
+  const nome = usuarioAtual?.nome || usuarioAtual?.usuario || "Usuário";
+  const perfil = usuarioAtual?.perfil || "COLABORADOR";
+  const inicial = nome.trim().charAt(0).toUpperCase() || "U";
+
+  ["userNome","userNomeMobile"].forEach(id => $(id).textContent = nome);
+  ["userPerfil","userPerfilMobile"].forEach(id => $(id).textContent = perfil === "ADMIN" ? "ADMIN" : "COLABORADOR");
+  ["userAvatar","userAvatarMobile"].forEach(id => $(id).textContent = inicial);
+  document.querySelectorAll(".admin-only").forEach(el => el.classList.toggle("oculto", !isAdmin()));
+}
+
+function mostrarLogin(msg=""){
+  $("appShell").classList.add("oculto");
+  $("loginScreen").classList.remove("oculto");
+  mostrarMensagemLogin(msg);
+  setTimeout(() => $("loginUsuario").focus(), 50);
+}
+
+function mostrarMensagemLogin(msg){ $("loginMessage").textContent = msg || ""; }
+
+function alternarSenhaLogin(){
+  const campo = $("loginSenha");
+  const mostrar = campo.type === "password";
+  campo.type = mostrar ? "text" : "password";
+  $("btnMostrarSenha").textContent = mostrar ? "Ocultar" : "Mostrar";
+}
+
+async function sair(){
+  try{ if(tokenSessao) await postApi({acao:"logout"}); }catch(_e){}
+  limparSessaoLocal();
+  usuarioAtual = null;
+  tokenSessao = "";
+  mostrarLogin();
+}
+
+function limparSessaoLocal(){ localStorage.removeItem(SESSION_KEY); }
+
 function abrirView(nome){
+  if((nome === "historico" || nome === "usuarios") && !isAdmin()){
+    toast("Seu perfil não possui acesso a esta área.","erro");
+    return;
+  }
+  const target = $("view-"+nome);
+  if(!target) return;
   document.querySelectorAll(".view").forEach(v => v.classList.remove("ativo"));
   document.querySelectorAll(".nav-item").forEach(v => v.classList.remove("ativo"));
-  $("view-"+nome).classList.add("ativo");
-  document.querySelector(`.nav-item[data-view="${nome}"]`).classList.add("ativo");
+  target.classList.add("ativo");
+  const nav = document.querySelector(`.nav-item[data-view="${nome}"]`);
+  if(nav) nav.classList.add("ativo");
   const titulos = {
     cadastro:["Cadastro de NRI","Identificação e rastreabilidade por palete"],
     pendentes:["Impressões pendentes","Três etiquetas idênticas por NRI em uma folha A4"],
-    historico:["Histórico / rastreabilidade","Consulta por lote, produto, NRI e transporte"]
+    historico:["Histórico / rastreabilidade","Consulta por lote, produto, NRI, usuário e transporte"],
+    usuarios:["Usuários e perfis","Administração de acessos ao sistema"]
   };
   $("tituloPagina").textContent = titulos[nome][0];
   $("subtituloPagina").textContent = titulos[nome][1];
@@ -47,28 +187,6 @@ function alternarMenu(abrir){
   $("overlay").classList.toggle("ativo", abrir);
 }
 
-function configurarEventos(){
-  $("codigoProduto").addEventListener("input", localizarProdutoDigitado);
-  $("validade").addEventListener("change", atualizarBloqueio);
-  $("formCadastro").addEventListener("submit", cadastrarNris);
-  $("formCadastro").addEventListener("reset", () => setTimeout(() => { produtoAtual=null; resetPreviewProduto(); preencherDatasPadrao(); }, 0));
-  $("placa").addEventListener("input", e => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""));
-
-  $("filtroPendentes").addEventListener("input", renderPendentes);
-  $("filtroUnidade").addEventListener("change", renderPendentes);
-  $("btnImprimirTudo").addEventListener("click", () => iniciarImpressao(filtrarPendentes()));
-  $("btnImprimirSelecionadas").addEventListener("click", () => iniciarImpressao(obterPendentesSelecionadas()));
-  $("btnSelecionarVisiveis").addEventListener("click", alternarSelecionadosVisiveis);
-
-  ["filtroHistorico","filtroStatus","filtroHistUnidade","filtroDe","filtroAte"].forEach(id => $(id).addEventListener(id.includes("filtroHistorico")?"input":"change", renderHistorico));
-  $("btnLimparHistorico").addEventListener("click", limparFiltrosHistorico);
-
-  document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", () => fecharModal(btn.dataset.close)));
-  $("btnImprimirPreview").addEventListener("click", () => previewAtual && iniciarImpressao([previewAtual], previewAtual.status === "IMPRESSO"));
-  $("btnImpressaoConcluida").addEventListener("click", confirmarImpressaoConcluida);
-  $("btnImpressaoCancelada").addEventListener("click", confirmarImpressaoCancelada);
-}
-
 function preencherDatasPadrao(){
   const agora = new Date();
   $("recebimento").value = dataInputLocal(agora);
@@ -76,10 +194,8 @@ function preencherDatasPadrao(){
 }
 
 async function carregarConfig(){
-  if(!urlConfigurada()) return toast("Informe a URL do Apps Script no script.js.","erro");
   try{
-    const r = await fetch(`${WEB_APP_URL}?acao=config&_=${Date.now()}`, {cache:"no-store"});
-    const d = await r.json();
+    const d = await getApi("config");
     if(d.status !== "success") throw new Error(d.message || "Falha ao carregar configurações");
     config = d;
     preencherSelect("unidade",config.unidades,"Selecione");
@@ -87,16 +203,76 @@ async function carregarConfig(){
     preencherSelect("turno",config.turnos,"Selecione");
     preencherSelect("motorista",config.motoristas,"Selecione");
     preencherSelect("fabrica",config.fabricas,"Selecione");
-    preencherSelect("filtroUnidade",config.unidades,"Todas",true);
-    preencherSelect("filtroHistUnidade",config.unidades,"Todas",true);
+    preencherSelect("filtroUnidade",config.unidades,"Todas");
+    preencherSelect("filtroHistUnidade",config.unidades,"Todas");
     const dl = $("listaProdutos"); dl.innerHTML="";
-    config.produtos.forEach(p => { const o=document.createElement("option"); o.value=p.codigo; o.label=`${p.codigo} - ${p.nome}`; dl.appendChild(o); });
-  }catch(e){ toast(e.message,"erro"); }
+    (config.produtos||[]).forEach(p => { const o=document.createElement("option"); o.value=p.codigo; o.label=`${p.codigo} - ${p.nome}`; dl.appendChild(o); });
+  }catch(e){ tratarErroApi(e); }
 }
 
-function preencherSelect(id, lista, placeholder, manterPrimeiro=false){
-  const s=$(id); s.innerHTML = manterPrimeiro ? `<option value="">${placeholder}</option>` : `<option value="">${placeholder}</option>`;
+function preencherSelect(id, lista, placeholder){
+  const s=$(id); s.innerHTML = `<option value="">${placeholder}</option>`;
   (lista||[]).forEach(v => { const o=document.createElement("option"); o.value=typeof v==="string"?v:v.nome; o.textContent=o.value; s.appendChild(o); });
+}
+
+function definirValorSelect(id, valor){
+  const select = $(id);
+  const texto = String(valor || "").trim();
+  if(!select || !texto) return;
+
+  const existente = Array.from(select.options).find(o => normalizar(o.value) === normalizar(texto));
+  if(existente){
+    select.value = existente.value;
+    return;
+  }
+
+  // Garante que o próprio usuário autenticado possa ser usado como conferente
+  // mesmo se a lista de CONFERENTES ainda não tiver sido atualizada.
+  const opcao = document.createElement("option");
+  opcao.value = texto;
+  opcao.textContent = texto;
+  select.appendChild(opcao);
+  select.value = texto;
+}
+
+async function preencherComUltimoCadastro(){
+  const btn = $("btnUltimoCadastro");
+  if(!btn || btn.disabled) return;
+
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = "Buscando último cadastro...";
+
+  try{
+    const d = await getApi("ultimoCadastro");
+    if(d.status !== "success") throw new Error(d.message || "Não foi possível localizar o último cadastro.");
+    if(!d.registro){
+      toast("Você ainda não possui um cadastro anterior para reaproveitar.","erro");
+      return;
+    }
+
+    const r = d.registro;
+
+    definirValorSelect("unidade", r.unidade);
+    $("recebimento").value = r.recebimento || "";
+
+    // O conferente é sempre o usuário que está atualmente autenticado.
+    definirValorSelect("conferente", usuarioAtual?.nome || usuarioAtual?.usuario || r.conferente);
+
+    definirValorSelect("turno", r.turno);
+    $("hora").value = r.hora || "";
+    definirValorSelect("motorista", r.motorista);
+    $("placa").value = String(r.placa || "").toUpperCase();
+    definirValorSelect("fabrica", r.fabrica);
+
+    toast("Dados do último cadastro preenchidos. Informe agora os dados do produto.","sucesso");
+    $("codigoProduto").focus();
+  }catch(e){
+    tratarErroApi(e);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
 }
 
 function localizarProdutoDigitado(){
@@ -135,21 +311,24 @@ async function cadastrarNris(ev){
   const ids=["unidade","validade","lote","recebimento","conferente","turno","hora","motorista","placa","fabrica","caixas","qtdPaletes"];
   for(const id of ids){ if(!String($(id).value||"").trim()) return toast(`Preencha o campo ${document.querySelector(`label[for="${id}"]`).textContent.replace(" *","")}.`,"erro"); }
   if(Number($("qtdPaletes").value)<1 || Number($("qtdPaletes").value)>99) return toast("Quantidade de paletes deve ficar entre 1 e 99.","erro");
+
   enviandoCadastro=true; $("btnCadastrar").disabled=true; $("btnCadastrar").textContent="Salvando...";
   try{
     const payload={acao:"criar",unidade:$("unidade").value,codigoProduto:produtoAtual.codigo,nomeProduto:produtoAtual.nome,validade:$("validade").value,lote:$("lote").value.trim(),recebimento:$("recebimento").value,conferente:$("conferente").value,turno:$("turno").value,hora:$("hora").value,motorista:$("motorista").value,placa:$("placa").value.trim(),fabrica:$("fabrica").value,caixas:Number($("caixas").value),quantidadePaletes:Number($("qtdPaletes").value)};
-    const d=await post(payload); if(d.status!=="success") throw new Error(d.message||"Erro ao cadastrar");
+    const d=await postApi(payload); if(d.status!=="success") throw new Error(d.message||"Erro ao cadastrar");
     toast(`${d.nris.length} NRI(s) cadastrado(s): ${d.nris.join(", ")}`,"sucesso");
     $("formCadastro").reset(); preencherDatasPadrao(); produtoAtual=null; resetPreviewProduto();
-    await Promise.all([carregarPendentes(),carregarHistorico()]); abrirView("pendentes");
-  }catch(e){ toast(e.message,"erro"); }
+    await carregarPendentes();
+    if(isAdmin()) await carregarHistorico();
+    abrirView("pendentes");
+  }catch(e){ tratarErroApi(e); }
   finally{ enviandoCadastro=false; $("btnCadastrar").disabled=false; $("btnCadastrar").textContent="Cadastrar NRI(s)"; }
 }
 
 async function carregarPendentes(){
   $("tbodyPendentes").innerHTML='<tr><td colspan="7" class="loading-row">Carregando...</td></tr>';
-  try{ const r=await fetch(`${WEB_APP_URL}?acao=pendentes&_=${Date.now()}`,{cache:"no-store"}); const d=await r.json(); if(d.status!=="success") throw new Error(d.message); pendentes=d.registros||[]; renderPendentes(); atualizarBadge(); }
-  catch(e){ $("tbodyPendentes").innerHTML='<tr><td colspan="7" class="empty-row">Falha ao carregar pendências.</td></tr>'; toast(e.message,"erro"); }
+  try{ const d=await getApi("pendentes"); if(d.status!=="success") throw new Error(d.message); pendentes=d.registros||[]; renderPendentes(); atualizarBadge(); }
+  catch(e){ $("tbodyPendentes").innerHTML='<tr><td colspan="7" class="empty-row">Falha ao carregar pendências.</td></tr>'; tratarErroApi(e); }
 }
 
 function filtrarPendentes(){
@@ -168,32 +347,97 @@ function obterPendentesSelecionadas(){ const ids=[...document.querySelectorAll('
 function alternarSelecionadosVisiveis(){ const c=[...document.querySelectorAll('.sel-pendente')]; const marcar=c.some(x=>!x.checked); c.forEach(x=>x.checked=marcar); }
 function atualizarBadge(){ $("badgePendentes").textContent=pendentes.length; }
 
-async function removerNri(r){ if(!confirm(`Remover ${r.nri} da fila de impressão? O registro permanecerá no histórico.`)) return; try{ const d=await post({acao:"remover",ids:[r.id]}); if(d.status!=="success") throw new Error(d.message); toast("NRI removido da fila.","sucesso"); await Promise.all([carregarPendentes(),carregarHistorico()]); }catch(e){ toast(e.message,"erro"); } }
+async function removerNri(r){
+  if(!confirm(`Remover ${r.nri} da fila de impressão? O registro permanecerá no histórico.`)) return;
+  try{ const d=await postApi({acao:"remover",ids:[r.id]}); if(d.status!=="success") throw new Error(d.message); toast("NRI removido da fila.","sucesso"); await carregarPendentes(); if(isAdmin()) await carregarHistorico(); }
+  catch(e){ tratarErroApi(e); }
+}
 
 async function carregarHistorico(){
-  $("tbodyHistorico").innerHTML='<tr><td colspan="6" class="loading-row">Carregando...</td></tr>';
-  try{ const r=await fetch(`${WEB_APP_URL}?acao=historico&_=${Date.now()}`,{cache:"no-store"}); const d=await r.json(); if(d.status!=="success") throw new Error(d.message); historico=d.registros||[]; renderHistorico(); }
-  catch(e){ $("tbodyHistorico").innerHTML='<tr><td colspan="6" class="empty-row">Falha ao carregar histórico.</td></tr>'; toast(e.message,"erro"); }
+  if(!isAdmin()) return;
+  $("tbodyHistorico").innerHTML='<tr><td colspan="7" class="loading-row">Carregando...</td></tr>';
+  try{ const d=await getApi("historico"); if(d.status!=="success") throw new Error(d.message); historico=d.registros||[]; renderHistorico(); }
+  catch(e){ $("tbodyHistorico").innerHTML='<tr><td colspan="7" class="empty-row">Falha ao carregar histórico.</td></tr>'; tratarErroApi(e); }
 }
 
 function filtrarHistorico(){
   const q=normalizar($("filtroHistorico").value), st=$("filtroStatus").value, un=$("filtroHistUnidade").value, de=$("filtroDe").value, ate=$("filtroAte").value;
-  return historico.filter(r=>{ const alvo=normalizar([r.nri,r.codigoProduto,r.nomeProduto,r.lote,r.placa,r.conferente,r.motorista,r.fabrica].join(" ")); const data=(r.criadoEmIso||"").slice(0,10); return (!q||alvo.includes(q))&&(!st||r.status===st)&&(!un||r.unidade===un)&&(!de||!data||data>=de)&&(!ate||!data||data<=ate); });
+  return historico.filter(r=>{ const alvo=normalizar([r.nri,r.codigoProduto,r.nomeProduto,r.lote,r.placa,r.conferente,r.motorista,r.fabrica,r.usuarioCadastro,r.nomeUsuarioCadastro].join(" ")); const data=(r.criadoEmIso||"").slice(0,10); return (!q||alvo.includes(q))&&(!st||r.status===st)&&(!un||r.unidade===un)&&(!de||!data||data>=de)&&(!ate||!data||data<=ate); });
 }
 
 function renderHistorico(){
+  if(!isAdmin()) return;
   const lista=filtrarHistorico(); const tb=$("tbodyHistorico"); tb.innerHTML="";
-  if(!lista.length){ tb.innerHTML='<tr><td colspan="6" class="empty-row">Nenhum registro encontrado.</td></tr>'; return; }
-  lista.forEach(r=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${esc(r.criadoEm||"-")}</td><td>${esc(r.nri)}<strong>${esc(r.codigoProduto)} - ${esc(r.nomeProduto)}</strong></td><td>${esc(r.lote)}<strong>${fmtData(r.validade)}</strong></td><td>${esc(r.unidade)}<small>${esc(r.placa)} · ${esc(r.motorista)}</small></td><td><span class="status ${String(r.status).toLowerCase()}">${esc(r.status)}</span></td><td><div class="acoes"><button class="btn-mini" data-act="ver">Ver</button>${r.status==="IMPRESSO"?'<button class="btn-mini" data-act="reemitir">Reemitir</button>':r.status==="PENDENTE"?'<button class="btn-mini" data-act="imprimir">Imprimir</button>':''}</div></td>`;
+  if(!lista.length){ tb.innerHTML='<tr><td colspan="7" class="empty-row">Nenhum registro encontrado.</td></tr>'; return; }
+  lista.forEach(r=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${esc(r.criadoEm||"-")}<small>${esc(r.usuarioCadastro||"-")}</small></td><td>${esc(r.nri)}<strong>${esc(r.codigoProduto)} - ${esc(r.nomeProduto)}</strong></td><td>${esc(r.lote)}<strong>${fmtData(r.validade)}</strong></td><td>${esc(r.unidade)}<small>${esc(r.placa)} · ${esc(r.motorista)}</small></td><td><strong>${esc(r.nomeUsuarioCadastro||r.usuarioCadastro||"-")}</strong><small>Conferente: ${esc(r.conferente||"-")}</small></td><td><span class="status ${String(r.status).toLowerCase()}">${esc(r.status)}</span></td><td><div class="acoes"><button class="btn-mini" data-act="ver">Ver</button>${r.status==="IMPRESSO"?'<button class="btn-mini" data-act="reemitir">Reemitir</button>':r.status==="PENDENTE"?'<button class="btn-mini" data-act="imprimir">Imprimir</button>':''}</div></td>`;
     tr.querySelector('[data-act="ver"]').onclick=()=>visualizarNri(r); const ri=tr.querySelector('[data-act="reemitir"]'); if(ri) ri.onclick=()=>iniciarImpressao([r],true); const im=tr.querySelector('[data-act="imprimir"]'); if(im) im.onclick=()=>iniciarImpressao([r]); tb.appendChild(tr); });
 }
 
 function limparFiltrosHistorico(){ ["filtroHistorico","filtroStatus","filtroHistUnidade","filtroDe","filtroAte"].forEach(id=>$(id).value=""); renderHistorico(); }
 
-function visualizarNri(r){ previewAtual=r; $("previewConteudo").innerHTML=htmlEtiqueta(r,false); abrirModal("modalPreview"); }
+async function carregarUsuarios(){
+  if(!isAdmin()) return;
+  try{ const d=await getApi("usuarios"); if(d.status!=="success") throw new Error(d.message); usuarios=d.usuarios||[]; renderUsuarios(); }
+  catch(e){ tratarErroApi(e); }
+}
 
+function renderUsuarios(){
+  const tb=$("tbodyUsuarios"); tb.innerHTML="";
+  if(!usuarios.length){ tb.innerHTML='<tr><td colspan="5" class="empty-row">Nenhum usuário cadastrado.</td></tr>'; return; }
+  usuarios.forEach(u=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><strong>${esc(u.usuario)}</strong></td><td>${esc(u.nome)}</td><td><span class="status ${u.perfil==='ADMIN'?'impresso':'pendente'}">${esc(u.perfil)}</span></td><td>${u.ativo?'<span class="status impresso">ATIVO</span>':'<span class="status removido">INATIVO</span>'}</td><td><button class="btn-mini" data-edit>Editar</button></td>`;
+    tr.querySelector("[data-edit]").onclick=()=>editarUsuario(u);
+    tb.appendChild(tr);
+  });
+}
+
+function editarUsuario(u){
+  $("usuarioOriginal").value=u.usuario;
+  $("novoUsuario").value=u.usuario;
+  $("novoNome").value=u.nome;
+  $("novoPerfil").value=u.perfil;
+  $("novaSenha").value="";
+  $("novoAtivo").checked=!!u.ativo;
+  $("senhaOpcional").textContent="(deixe em branco para manter a atual)";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function limparFormularioUsuario(){
+  $("formUsuario").reset();
+  $("usuarioOriginal").value="";
+  $("novoPerfil").value="COLABORADOR";
+  $("novoAtivo").checked=true;
+  $("senhaOpcional").textContent="";
+}
+
+async function salvarUsuario(ev){
+  ev.preventDefault(); if(!isAdmin()) return;
+  const original=$("usuarioOriginal").value.trim();
+  const usuario=$("novoUsuario").value.trim();
+  const nome=$("novoNome").value.trim();
+  const perfil=$("novoPerfil").value;
+  const senha=$("novaSenha").value;
+  const ativo=$("novoAtivo").checked;
+  if(!usuario||!nome||!perfil) return toast("Preencha usuário, nome e perfil.","erro");
+  if(!original && senha.length<6) return toast("Para novo usuário, informe uma senha com pelo menos 6 caracteres.","erro");
+  if(senha && senha.length<6) return toast("A senha deve ter pelo menos 6 caracteres.","erro");
+  $("btnSalvarUsuario").disabled=true; $("btnSalvarUsuario").textContent="Salvando...";
+  try{
+    const d=await postApi({acao:"salvarUsuario",usuarioOriginal:original,usuario,nome,perfil,senha,ativo});
+    if(d.status!=="success") throw new Error(d.message);
+    toast("Usuário salvo com sucesso.","sucesso"); limparFormularioUsuario(); await carregarUsuarios();
+  }catch(e){ tratarErroApi(e); }
+  finally{ $("btnSalvarUsuario").disabled=false; $("btnSalvarUsuario").textContent="Salvar usuário"; }
+}
+
+function visualizarNri(r){ previewAtual=r; $("previewConteudo").innerHTML=htmlEtiqueta(r,false); carregarImagensPreview(); abrirModal("modalPreview"); }
 function abrirModal(id){ $(id).classList.add("aberto"); $(id).setAttribute("aria-hidden","false"); }
 function fecharModal(id){ $(id).classList.remove("aberto"); $(id).setAttribute("aria-hidden","true"); }
+
+function carregarImagensPreview(){
+  $("previewConteudo").querySelectorAll("img[data-code]").forEach(img=>carregarImagemComFallback(img,img.dataset.code));
+}
 
 async function iniciarImpressao(registros, reemissao=false){
   if(!registros || !registros.length) return toast("Selecione ao menos um NRI para imprimir.","erro");
@@ -209,27 +453,83 @@ async function iniciarImpressao(registros, reemissao=false){
 async function confirmarImpressaoConcluida(){
   if(!impressaoPendente) return;
   const ids=impressaoPendente.registros.map(r=>r.id);
-  try{ const d=await post({acao:"confirmarImpressao",ids,reemissao:!!impressaoPendente.reemissao,copias:3}); if(d.status!=="success") throw new Error(d.message); toast(impressaoPendente.reemissao?"Reemissão registrada.":"Impressão confirmada e fila atualizada.","sucesso"); fecharModal("modalConfirmacaoImpressao"); impressaoPendente=null; await Promise.all([carregarPendentes(),carregarHistorico()]); }
-  catch(e){ toast(e.message,"erro"); }
+  try{ const d=await postApi({acao:"confirmarImpressao",ids,reemissao:!!impressaoPendente.reemissao,copias:3}); if(d.status!=="success") throw new Error(d.message); toast(impressaoPendente.reemissao?"Reemissão registrada.":"Impressão confirmada e fila atualizada.","sucesso"); fecharModal("modalConfirmacaoImpressao"); impressaoPendente=null; await carregarPendentes(); if(isAdmin()) await carregarHistorico(); }
+  catch(e){ tratarErroApi(e); }
 }
 
 async function confirmarImpressaoCancelada(){
   if(!impressaoPendente){ fecharModal("modalConfirmacaoImpressao"); return; }
-  try{ await post({acao:"cancelarImpressao",ids:impressaoPendente.registros.map(r=>r.id),reemissao:!!impressaoPendente.reemissao}); }catch(e){}
+  try{ await postApi({acao:"cancelarImpressao",ids:impressaoPendente.registros.map(r=>r.id),reemissao:!!impressaoPendente.reemissao}); }catch(_e){}
   impressaoPendente=null; fecharModal("modalConfirmacaoImpressao"); toast("Impressão mantida como não concluída.","erro");
 }
 
 function documentoImpressao(registros){
   const paginas=registros.map(r=>`<section class="page">${htmlEtiqueta(r,true)}${htmlEtiqueta(r,true)}${htmlEtiqueta(r,true)}</section>`).join("");
-  return `<!DOCTYPE html><html><head><base href="${document.baseURI}"><meta charset="UTF-8"><style>@page{size:A4 portrait;margin:6mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#000}.page{height:285mm;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always}.page:last-child{page-break-after:auto}.nri-preview-label{height:91mm;border:1px solid #111;background:#fff;color:#000}.nri-top{display:flex;justify-content:space-between;border-bottom:1px solid #111;padding:3px 7px;font-size:10px}.nri-product{display:grid;grid-template-columns:72px 1fr;align-items:center;height:27mm;border-bottom:1px solid #111;padding:3px 8px}.nri-product img{width:60px;height:23mm;object-fit:contain}.nri-product strong{font-size:16px}.nri-validade{display:flex;justify-content:space-between;align-items:center;height:19mm;border-bottom:1px solid #111;padding:4px 10px}.nri-validade span{font-size:18px;font-weight:800}.nri-validade strong{font-size:30px}.nri-row{display:grid;border-bottom:1px solid #111}.nri-row.cols-2{grid-template-columns:1fr 1fr}.nri-row.cols-3{grid-template-columns:repeat(3,1fr)}.nri-cell{padding:3px 6px;font-size:10px;border-right:1px solid #111;min-height:10mm}.nri-cell:last-child{border-right:0}.nri-cell b{display:block;font-size:8px;text-transform:uppercase;margin-bottom:2px}.nri-footer{display:flex;justify-content:space-between;padding:3px 6px;font-size:10px}</style></head><body>${paginas}<script>function imgFallback(img,code,i){const ex=['png','jpg','jpeg','webp'];i=i||0;if(i>=ex.length){img.style.display='none';return;}img.onerror=function(){imgFallback(img,code,i+1)};img.src='${PASTA_IMAGENS}/'+encodeURIComponent(code)+'.'+ex[i];}</script></body></html>`;
+  return `<!DOCTYPE html><html><head><base href="${document.baseURI}"><meta charset="UTF-8"><style>
+@page{size:A4 portrait;margin:5mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#111}.page{height:287mm;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always}.page:last-child{page-break-after:auto}.nri-preview-label{height:92mm;width:100%;border:1.2px solid #111;background:#fff;color:#111;overflow:hidden}.nri-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;height:7mm;border-bottom:1px solid #111}.nri-code-label{padding:1mm 2mm;font-size:10pt;border-right:1px solid #111}.nri-code-value{padding:1mm 3mm;font-size:14pt;font-weight:900}.nri-id{padding:1mm 2mm;font-size:8pt;font-weight:800}.nri-product-title{height:18mm;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:center;gap:3mm;padding:1.5mm 3mm;text-align:center}.nri-product-title img{width:14mm;height:14mm;object-fit:contain}.nri-product-title strong{font-size:18pt;line-height:1;font-weight:900}.nri-mini-strip{display:grid;grid-template-columns:1fr 1fr;height:6mm;border-bottom:1px solid #111}.nri-mini-cell{padding:1mm 2mm;font-size:7.5pt}.nri-mini-cell+.nri-mini-cell{border-left:1px solid #111}.nri-mini-cell b{font-size:7pt;text-transform:uppercase;margin-right:2mm}.nri-validade{display:grid;grid-template-columns:31% 69%;align-items:center;height:28mm;border-bottom:1px solid #111}.nri-validade span{height:100%;display:flex;align-items:center;padding:2mm 3mm;border-right:1px solid #111;font-size:20pt;font-weight:900}.nri-validade strong{font-size:38pt;line-height:1;text-align:center;font-weight:900;letter-spacing:.5mm;color:#444}.nri-dates{display:grid;grid-template-columns:1fr 1fr;height:10mm;border-bottom:1px solid #111}.nri-date-cell{display:grid;grid-template-columns:auto 1fr;align-items:center}.nri-date-cell+.nri-date-cell{border-left:1px solid #111}.nri-date-cell b{padding:1.5mm 2mm;font-size:8.5pt}.nri-date-cell strong{text-align:center;padding:1.5mm 2mm;border-left:1px solid #111;font-size:10pt}.nri-meta{display:grid;grid-template-columns:1.55fr .85fr .8fr 1.15fr 1fr;height:13mm;border-bottom:1px solid #111}.nri-meta-cell{text-align:center;border-right:1px solid #111;overflow:hidden}.nri-meta-cell:last-child{border-right:0}.nri-meta-cell b{display:block;padding:1mm 1mm .4mm;font-size:6.5pt;text-decoration:underline;text-transform:uppercase}.nri-meta-cell span{display:block;padding:.6mm 1mm 1mm;font-size:7pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nri-bottom{display:grid;grid-template-columns:1.8fr .75fr 1.1fr;height:9mm}.nri-bottom>div{padding:1.2mm 2mm;font-size:7.5pt;border-right:1px solid #111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nri-bottom>div:last-child{border-right:0}.nri-bottom b{text-transform:uppercase;margin-right:1mm}
+</style></head><body>${paginas}<script>function imgFallback(img,code,i){const ex=['png','jpg','jpeg','webp'];i=i||0;if(i>=ex.length){img.style.display='none';return;}img.onerror=function(){imgFallback(img,code,i+1)};img.src='${PASTA_IMAGENS}/'+encodeURIComponent(code)+'.'+ex[i];}</script></body></html>`;
 }
 
 function htmlEtiqueta(r, paraImpressao){
-  const img = paraImpressao ? `<img alt="" onerror="imgFallback(this,'${jsEsc(r.codigoProduto)}',1)" src="${PASTA_IMAGENS}/${encodeURIComponent(r.codigoProduto)}.png">` : `<img alt="" src="${PASTA_IMAGENS}/${encodeURIComponent(r.codigoProduto)}.png" onerror="this.style.display='none'">`;
-  return `<div class="nri-preview-label"><div class="nri-top"><strong>CÓDIGO: ${esc(r.codigoProduto)}</strong><span>${esc(r.nri)}</span></div><div class="nri-product">${img}<strong>${esc(r.nomeProduto)}</strong></div><div class="nri-validade"><span>VALIDADE:</span><strong>${fmtData(r.validade)}</strong></div><div class="nri-row cols-2"><div class="nri-cell"><b>Lote</b>${esc(r.lote)}</div><div class="nri-cell"><b>Recebimento / Bloqueio</b>${fmtData(r.recebimento)} / ${fmtData(r.bloqueio)}</div></div><div class="nri-row cols-3"><div class="nri-cell"><b>Conferente</b>${esc(r.conferente)}</div><div class="nri-cell"><b>Turno / Hora</b>${esc(r.turno)} · ${esc(r.hora)}</div><div class="nri-cell"><b>Motorista / Placa</b>${esc(r.motorista)} · ${esc(r.placa)}</div></div><div class="nri-footer"><span>FÁBRICA: ${esc(r.fabrica)}</span><span>CAIXAS: <strong>${esc(r.caixas)}</strong></span></div><div class="nri-footer"><span>UNIDADE: ${esc(r.unidade)}</span></div></div>`;
+  const img = paraImpressao
+    ? `<img alt="" onerror="imgFallback(this,'${jsEsc(r.codigoProduto)}',1)" src="${PASTA_IMAGENS}/${encodeURIComponent(r.codigoProduto)}.png">`
+    : `<img alt="" data-code="${esc(r.codigoProduto)}">`;
+
+  return `<div class="nri-preview-label">
+    <div class="nri-top">
+      <div class="nri-code-label">CÓDIGO:</div>
+      <div class="nri-code-value">${esc(r.codigoProduto)}</div>
+      <div class="nri-id">${esc(r.nri)}</div>
+    </div>
+    <div class="nri-product-title">${img}<strong>${esc(r.nomeProduto)}</strong></div>
+    <div class="nri-mini-strip">
+      <div class="nri-mini-cell"><b>LOTE:</b>${esc(r.lote)}</div>
+      <div class="nri-mini-cell"><b>UNIDADE:</b>${esc(r.unidade)}</div>
+    </div>
+    <div class="nri-validade"><span>VALIDADE:</span><strong>${fmtData(r.validade)}</strong></div>
+    <div class="nri-dates">
+      <div class="nri-date-cell"><b>RECEB:</b><strong>${fmtData(r.recebimento)}</strong></div>
+      <div class="nri-date-cell"><b>BLOQUEIO:</b><strong>${fmtData(r.bloqueio)}</strong></div>
+    </div>
+    <div class="nri-meta">
+      <div class="nri-meta-cell"><b>Conferente</b><span>${esc(r.conferente)}</span></div>
+      <div class="nri-meta-cell"><b>Turno</b><span>${esc(r.turno)}</span></div>
+      <div class="nri-meta-cell"><b>Hora</b><span>${esc(r.hora)}</span></div>
+      <div class="nri-meta-cell"><b>Motorista</b><span>${esc(r.motorista)}</span></div>
+      <div class="nri-meta-cell"><b>Placa</b><span>${esc(r.placa)}</span></div>
+    </div>
+    <div class="nri-bottom">
+      <div><b>Fábrica:</b>${esc(r.fabrica)}</div>
+      <div><b>Caixas:</b>${esc(r.caixas)}</div>
+      <div><b>NRI:</b>${esc(r.nri)}</div>
+    </div>
+  </div>`;
 }
 
-async function post(payload){ const r=await fetch(WEB_APP_URL,{method:"POST",body:JSON.stringify(payload)}); return await r.json(); }
+async function getApi(acao, extras={}){
+  const qs = new URLSearchParams({acao,token:tokenSessao,...extras,_:Date.now().toString()});
+  const r = await fetch(`${WEB_APP_URL}?${qs.toString()}`,{cache:"no-store"});
+  const d = await r.json();
+  if(d.status === "unauthorized") throw new Error("SESSAO_EXPIRADA");
+  return d;
+}
+
+async function postApi(payload, semToken=false){
+  const body = semToken ? payload : {...payload,token:tokenSessao};
+  const r=await fetch(WEB_APP_URL,{method:"POST",body:JSON.stringify(body)});
+  const d=await r.json();
+  if(d.status === "unauthorized") throw new Error("SESSAO_EXPIRADA");
+  return d;
+}
+
+function tratarErroApi(e){
+  if(String(e.message||e) === "SESSAO_EXPIRADA"){
+    limparSessaoLocal(); tokenSessao=""; usuarioAtual=null; mostrarLogin("Sua sessão expirou. Entre novamente.");
+    return;
+  }
+  toast(e.message||String(e),"erro");
+}
+
 function urlConfigurada(){ return WEB_APP_URL.startsWith("https://script.google.com/macros/s/") && WEB_APP_URL.endsWith("/exec"); }
 function normalizar(v){ return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
 function fmtData(v){ if(!v) return "-"; if(/^\d{4}-\d{2}-\d{2}$/.test(v)){ const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; } return v; }
