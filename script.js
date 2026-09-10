@@ -1,4 +1,4 @@
-const WEB_APP_URL = "COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKUbmHswmXauzd6dZVOLxzSVL9RwE63ipMzbVXK1ZqolGzVymOpa2zDrWwvteXZCRg/exec";
 const PASTA_IMAGENS = "imagens_produtos";
 const EXTENSOES_IMAGEM = ["png","jpg","jpeg","webp"];
 const TZ = "America/Fortaleza";
