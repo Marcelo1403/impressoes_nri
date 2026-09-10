@@ -1,4 +1,4 @@
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKUbmHswmXauzd6dZVOLxzSVL9RwE63ipMzbVXK1ZqolGzVymOpa2zDrWwvteXZCRg/exec";
+const WEB_APP_URL = "COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT";
 const PASTA_IMAGENS = "imagens_produtos";
 const EXTENSOES_IMAGEM = ["png","jpg","jpeg","webp"];
 const TZ = "America/Fortaleza";
@@ -14,6 +14,9 @@ let produtoAtual = null;
 let previewAtual = null;
 let impressaoPendente = null;
 let enviandoCadastro = false;
+let timerAtualizacaoAutomatica = null;
+let atualizacaoAutomaticaEmAndamento = false;
+const AUTO_REFRESH_MS = 3000;
 
 const $ = id => document.getElementById(id);
 const isAdmin = () => usuarioAtual && usuarioAtual.perfil === "ADMIN";
@@ -160,6 +163,8 @@ async function iniciarAplicacao(){
   if(isAdmin()){
     await Promise.all([carregarHistorico(), carregarUsuarios()]);
   }
+
+  iniciarAtualizacaoAutomatica();
 }
 
 function aplicarPerfil(){
@@ -190,6 +195,7 @@ function alternarSenhaLogin(){
 }
 
 async function sair(){
+  pararAtualizacaoAutomatica();
   try{ if(tokenSessao) await postApi({acao:"logout"}); }catch(_e){}
   limparSessaoLocal();
   usuarioAtual = null;
@@ -227,27 +233,123 @@ function alternarMenu(abrir){
   $("overlay").classList.toggle("ativo", abrir);
 }
 
+function iniciarAtualizacaoAutomatica(){
+  pararAtualizacaoAutomatica();
+  timerAtualizacaoAutomatica = setInterval(sincronizarTelaAtual, AUTO_REFRESH_MS);
+}
+
+function pararAtualizacaoAutomatica(){
+  if(timerAtualizacaoAutomatica){
+    clearInterval(timerAtualizacaoAutomatica);
+    timerAtualizacaoAutomatica = null;
+  }
+}
+
+async function sincronizarTelaAtual(){
+  if(atualizacaoAutomaticaEmAndamento || !usuarioAtual || !tokenSessao) return;
+  if(document.visibilityState === "hidden") return;
+  if(document.querySelector(".modal.aberto")) return;
+
+  const view = document.querySelector(".view.ativo");
+  if(!view) return;
+
+  atualizacaoAutomaticaEmAndamento = true;
+  try{
+    if(view.id === "view-cadastro"){
+      await carregarConfig(true);
+      return;
+    }
+
+    if(view.id === "view-pendentes"){
+      const selecionados = new Set(
+        [...document.querySelectorAll(".sel-pendente:checked")].map(x => String(x.dataset.id))
+      );
+      const d = await getApi("pendentes");
+      if(d.status === "success"){
+        pendentes = d.registros || [];
+        renderPendentes(selecionados);
+        atualizarBadge();
+      }
+      return;
+    }
+
+    if(view.id === "view-historico" && isAdmin()){
+      const d = await getApi("historico");
+      if(d.status === "success"){
+        historico = d.registros || [];
+        renderHistorico();
+      }
+      return;
+    }
+
+    if(view.id === "view-usuarios" && isAdmin()){
+      const d = await getApi("usuarios");
+      if(d.status === "success"){
+        usuarios = d.usuarios || [];
+        renderUsuarios();
+      }
+    }
+  }catch(e){
+    if(String(e.message||e) === "SESSAO_EXPIRADA") tratarErroApi(e);
+  }finally{
+    atualizacaoAutomaticaEmAndamento = false;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible" && usuarioAtual && tokenSessao){
+    sincronizarTelaAtual();
+  }
+});
+
 function preencherDatasPadrao(){
   const agora = new Date();
   $("recebimento").value = dataInputLocal(agora);
   $("hora").value = horaInputLocal(agora);
 }
 
-async function carregarConfig(){
+async function carregarConfig(silencioso=false){
   try{
     const d = await getApi("config");
     if(d.status !== "success") throw new Error(d.message || "Falha ao carregar configurações");
-    config = d;
-    preencherSelect("unidade",config.unidades,"Selecione");
-    preencherSelect("conferente",config.conferentes,"Selecione");
-    preencherSelect("turno",config.turnos,"Selecione");
-    preencherSelect("motorista",config.motoristas,"Selecione");
-    preencherSelect("fabrica",config.fabricas,"Selecione");
-    preencherSelect("filtroUnidade",config.unidades,"Todas");
-    preencherSelect("filtroHistUnidade",config.unidades,"Todas");
-    const dl = $("listaProdutos"); dl.innerHTML="";
-    (config.produtos||[]).forEach(p => { const o=document.createElement("option"); o.value=p.codigo; o.label=`${p.codigo} - ${p.nome}`; dl.appendChild(o); });
-  }catch(e){ tratarErroApi(e); }
+    aplicarConfig(d, true);
+  }catch(e){
+    if(!silencioso || String(e.message||e) === "SESSAO_EXPIRADA") tratarErroApi(e);
+  }
+}
+
+function aplicarConfig(d, preservarValores=true){
+  const idsSelect = ["unidade","conferente","turno","motorista","fabrica","filtroUnidade","filtroHistUnidade"];
+  const valoresAtuais = {};
+  if(preservarValores){
+    idsSelect.forEach(id => { const campo=$(id); valoresAtuais[id]=campo ? campo.value : ""; });
+  }
+
+  config = d;
+  preencherSelect("unidade",config.unidades,"Selecione");
+  preencherSelect("conferente",config.conferentes,"Selecione");
+  preencherSelect("turno",config.turnos,"Selecione");
+  preencherSelect("motorista",config.motoristas,"Selecione");
+  preencherSelect("fabrica",config.fabricas,"Selecione");
+  preencherSelect("filtroUnidade",config.unidades,"Todas");
+  preencherSelect("filtroHistUnidade",config.unidades,"Todas");
+
+  if(preservarValores){
+    idsSelect.forEach(id => {
+      if(valoresAtuais[id]) definirValorSelect(id,valoresAtuais[id]);
+    });
+  }
+
+  const dl = $("listaProdutos");
+  dl.innerHTML="";
+  (config.produtos||[]).forEach(p => {
+    const o=document.createElement("option");
+    o.value=p.codigo;
+    o.label=`${p.codigo} - ${p.nome}`;
+    dl.appendChild(o);
+  });
+
+  if($("codigoProduto").value.trim()) localizarProdutoDigitado();
 }
 
 function preencherSelect(id, lista, placeholder){
@@ -376,10 +478,15 @@ function filtrarPendentes(){
   return pendentes.filter(r => (!un||r.unidade===un) && (!q||normalizar([r.nri,r.codigoProduto,r.nomeProduto,r.lote,r.placa].join(" ")).includes(q)));
 }
 
-function renderPendentes(){
+function renderPendentes(selecionadosPreservados=null){
+  const selecionados = selecionadosPreservados || new Set(
+    [...document.querySelectorAll(".sel-pendente:checked")].map(x => String(x.dataset.id))
+  );
   const lista=filtrarPendentes(); $("qtdPendentes").textContent=lista.length; const tb=$("tbodyPendentes"); tb.innerHTML="";
   if(!lista.length){ tb.innerHTML='<tr><td colspan="7" class="empty-row">Nenhum NRI pendente.</td></tr>'; return; }
   lista.forEach(r => { const tr=document.createElement("tr"); tr.innerHTML=`<td><input type="checkbox" class="sel-pendente" data-id="${esc(r.id)}"></td><td>${esc(r.nri)}<strong>${esc(r.codigoProduto)} - ${esc(r.nomeProduto)}</strong></td><td>${esc(r.lote)}<strong>${fmtData(r.validade)}</strong></td><td>${fmtData(r.recebimento)}<strong>${fmtData(r.bloqueio)}</strong></td><td>${esc(r.unidade)}<small>${esc(r.placa)} · ${esc(r.motorista)}</small></td><td>${esc(r.caixas)}</td><td><div class="acoes"><button class="btn-mini" data-act="ver">Visualizar</button><button class="btn-mini" data-act="imprimir">Imprimir</button><button class="btn-mini perigo" data-act="remover">Remover</button></div></td>`;
+    const checkbox = tr.querySelector('.sel-pendente');
+    if(checkbox && selecionados.has(String(r.id))) checkbox.checked = true;
     tr.querySelector('[data-act="ver"]').onclick=()=>visualizarNri(r); tr.querySelector('[data-act="imprimir"]').onclick=()=>iniciarImpressao([r]); tr.querySelector('[data-act="remover"]').onclick=()=>removerNri(r); tb.appendChild(tr); });
 }
 
@@ -506,7 +613,7 @@ async function confirmarImpressaoCancelada(){
 function documentoImpressao(registros){
   const paginas=registros.map(r=>`<section class="page">${htmlEtiqueta(r,true)}${htmlEtiqueta(r,true)}${htmlEtiqueta(r,true)}</section>`).join("");
   return `<!DOCTYPE html><html><head><base href="${document.baseURI}"><meta charset="UTF-8"><style>
-@page{size:A4 portrait;margin:5mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#111}.page{height:287mm;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always}.page:last-child{page-break-after:auto}.nri-preview-label{height:92mm;width:100%;border:1.2px solid #111;background:#fff;color:#111;overflow:hidden}.nri-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;height:7mm;border-bottom:1px solid #111}.nri-code-label{padding:1mm 2mm;font-size:10pt;border-right:1px solid #111}.nri-code-value{padding:1mm 3mm;font-size:14pt;font-weight:900}.nri-id{padding:1mm 2mm;font-size:8pt;font-weight:800}.nri-product-title{height:18mm;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:center;gap:3mm;padding:1.5mm 3mm;text-align:center}.nri-product-title img{width:14mm;height:14mm;object-fit:contain}.nri-product-title strong{font-size:18pt;line-height:1;font-weight:900}.nri-mini-strip{display:grid;grid-template-columns:1fr 1fr;height:6mm;border-bottom:1px solid #111}.nri-mini-cell{padding:1mm 2mm;font-size:7.5pt}.nri-mini-cell+.nri-mini-cell{border-left:1px solid #111}.nri-mini-cell b{font-size:7pt;text-transform:uppercase;margin-right:2mm}.nri-validade{display:grid;grid-template-columns:31% 69%;align-items:center;height:28mm;border-bottom:1px solid #111}.nri-validade span{height:100%;display:flex;align-items:center;padding:2mm 3mm;border-right:1px solid #111;font-size:20pt;font-weight:900}.nri-validade strong{font-size:38pt;line-height:1;text-align:center;font-weight:900;letter-spacing:.5mm;color:#444}.nri-dates{display:grid;grid-template-columns:1fr 1fr;height:10mm;border-bottom:1px solid #111}.nri-date-cell{display:grid;grid-template-columns:auto 1fr;align-items:center}.nri-date-cell+.nri-date-cell{border-left:1px solid #111}.nri-date-cell b{padding:1.5mm 2mm;font-size:8.5pt}.nri-date-cell strong{text-align:center;padding:1.5mm 2mm;border-left:1px solid #111;font-size:10pt}.nri-meta{display:grid;grid-template-columns:1.55fr .85fr .8fr 1.15fr 1fr;height:13mm;border-bottom:1px solid #111}.nri-meta-cell{text-align:center;border-right:1px solid #111;overflow:hidden}.nri-meta-cell:last-child{border-right:0}.nri-meta-cell b{display:block;padding:1mm 1mm .4mm;font-size:6.5pt;text-decoration:underline;text-transform:uppercase}.nri-meta-cell span{display:block;padding:.6mm 1mm 1mm;font-size:7pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nri-bottom{display:grid;grid-template-columns:1.8fr .75fr 1.1fr;height:9mm}.nri-bottom>div{padding:1.2mm 2mm;font-size:7.5pt;border-right:1px solid #111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nri-bottom>div:last-child{border-right:0}.nri-bottom b{text-transform:uppercase;margin-right:1mm}
+@page{size:A4 portrait;margin:5mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#111}.page{height:287mm;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always}.page:last-child{page-break-after:auto}.nri-preview-label{height:92mm;width:100%;border:1.2px solid #111;background:#fff;color:#111;overflow:hidden}.nri-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;height:7mm;border-bottom:1px solid #111}.nri-code-label{padding:.6mm 2mm;font-size:12pt;font-weight:700;border-right:1px solid #111}.nri-code-value{padding:.4mm 3mm;font-size:18pt;line-height:1;font-weight:1000}.nri-id{padding:.6mm 2mm;font-size:10pt;font-weight:900}.nri-product-title{height:18mm;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:center;gap:3mm;padding:1mm 3mm;text-align:center}.nri-product-title img{width:14mm;height:14mm;object-fit:contain}.nri-product-title strong{font-size:24pt;line-height:.96;font-weight:1000;letter-spacing:.1mm}.nri-mini-strip{display:grid;grid-template-columns:1fr 1fr;height:6mm;border-bottom:1px solid #111}.nri-mini-cell{display:flex;align-items:center;padding:.5mm 2mm;font-size:9pt;font-weight:700}.nri-mini-cell+.nri-mini-cell{border-left:1px solid #111}.nri-mini-cell b{font-size:8.5pt;font-weight:1000;text-transform:uppercase;margin-right:1.3mm}.nri-validade{display:grid;grid-template-columns:31% 69%;align-items:center;height:28mm;border-bottom:1px solid #111}.nri-validade span{height:100%;display:flex;align-items:center;padding:1.5mm 2.5mm;border-right:1px solid #111;font-size:25pt;font-weight:1000;letter-spacing:-.3mm}.nri-validade strong{font-size:46pt;line-height:.9;text-align:center;font-weight:1000;letter-spacing:.35mm;color:#444}.nri-dates{display:grid;grid-template-columns:1fr 1fr;height:10mm;border-bottom:1px solid #111}.nri-date-cell{display:grid;grid-template-columns:auto 1fr;align-items:center}.nri-date-cell+.nri-date-cell{border-left:1px solid #111}.nri-date-cell b{padding:1mm 1.8mm;font-size:10.5pt;font-weight:1000}.nri-date-cell strong{text-align:center;padding:1mm 1.4mm;border-left:1px solid #111;font-size:13.5pt;line-height:1;font-weight:1000}.nri-meta{display:grid;grid-template-columns:1.55fr .85fr .8fr 1.15fr 1fr;height:13mm;border-bottom:1px solid #111}.nri-meta-cell{text-align:center;border-right:1px solid #111;overflow:hidden}.nri-meta-cell:last-child{border-right:0}.nri-meta-cell b{display:block;padding:.7mm .7mm .2mm;font-size:7.8pt;line-height:1;font-weight:1000;text-decoration:underline;text-transform:uppercase}.nri-meta-cell span{display:block;padding:.7mm .7mm .5mm;font-size:9.6pt;line-height:1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nri-bottom{display:grid;grid-template-columns:1.8fr .75fr 1.1fr;height:9mm}.nri-bottom>div{display:flex;align-items:center;padding:.7mm 1.6mm;font-size:9.5pt;line-height:1;font-weight:700;border-right:1px solid #111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nri-bottom>div:last-child{border-right:0}.nri-bottom b{font-size:9pt;font-weight:1000;text-transform:uppercase;margin-right:1.2mm}
 </style></head><body>${paginas}<script>function imgFallback(img,code,i){const ex=['png','jpg','jpeg','webp'];i=i||0;if(i>=ex.length){img.style.display='none';return;}img.onerror=function(){imgFallback(img,code,i+1)};img.src='${PASTA_IMAGENS}/'+encodeURIComponent(code)+'.'+ex[i];}</script></body></html>`;
 }
 
@@ -573,6 +680,7 @@ async function lerRespostaJson(response){
 
 function tratarErroApi(e){
   if(String(e.message||e) === "SESSAO_EXPIRADA"){
+    pararAtualizacaoAutomatica();
     limparSessaoLocal(); tokenSessao=""; usuarioAtual=null; mostrarLogin("Sua sessão expirou. Entre novamente.");
     return;
   }
