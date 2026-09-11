@@ -103,6 +103,12 @@ button,input,select{font:inherit}
 .nri-meta-cell b{font-size:10px!important;line-height:1!important;padding:0 3px 1px!important;margin:0!important}
 .nri-meta-cell span{font-size:12px!important;line-height:1!important;padding:1px 3px 0!important;margin:0!important}
 
+
+
+/* AVARIAS */
+.avaria-form-card{margin-bottom:18px}.avaria-list-card{margin-top:18px}.cliente-auto-card{display:grid;grid-template-columns:auto 1.5fr 1fr;gap:14px;align-items:center;margin:16px 0 22px;padding:14px;border:1px solid #d7e5f0;background:linear-gradient(135deg,#f7fbff,#eef7ff);border-radius:15px}.cliente-auto-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:#dfeffc;color:var(--blue);font-size:22px;font-weight:900}.cliente-auto-dados{min-width:0;display:flex;flex-direction:column;gap:3px}.cliente-auto-dados span{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#6b8194;font-weight:900}.cliente-auto-dados strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cliente-auto-dados.cidade{padding-left:14px;border-left:1px solid #cdddec}.quantidade-com-unidade{display:grid;grid-template-columns:1fr 105px;gap:8px}.evidencias-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.evidencia-box{border:1px solid #d4e0eb;background:#fbfdff;border-radius:17px;padding:15px}.evidencia-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}.evidencia-head>div{display:flex;flex-direction:column;gap:4px}.evidencia-head strong{font-size:13px}.evidencia-head span:not(.evidencia-status){font-size:11px;color:var(--muted);line-height:1.4}.evidencia-status{flex:0 0 auto;padding:5px 8px;border-radius:999px;background:#fff1df;color:#9a5b0a;font-size:9px;font-weight:900;text-transform:uppercase}.evidencia-status.ok{background:#e8f6ee;color:var(--success)}.foto-preview{height:230px;border:1px dashed #bfcfdd;border-radius:13px;background:#f4f8fb;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#7990a5;gap:6px}.foto-preview span{font-size:32px}.foto-preview img{width:100%;height:100%;object-fit:contain;background:#fff}.foto-preview:not(.vazio){border-style:solid;background:#fff}.evidencia-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.evidencia-actions .btn{min-height:36px;padding:7px 11px;font-size:11px}.assinatura-wrap{height:230px;position:relative;border:1px solid #cbd9e5;border-radius:13px;background:#fff;overflow:hidden}.assinatura-wrap canvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}.assinatura-placeholder{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:#a4b2bf;font-size:16px;font-weight:800}.lista-avaria-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:14px}.lista-avaria-head p{margin:6px 0 0;color:var(--muted);font-size:12px}.section-title.sem-margem{margin:0}.avaria-table-wrap table{min-width:1080px}.lote-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;font-size:9.5px;font-weight:900;white-space:nowrap}.lote-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.lote-badge.ok{background:#e5f6ec;color:#167847}.lote-badge.nao{background:#fdeaea;color:#bb3232}.status.aprovado{background:#e8f6ee;color:var(--success)}.status.reprovado{background:#fdeaea;color:var(--danger)}.btn-mini.aprovar{background:#e8f6ee;border-color:#bee4cd;color:#167847}.detalhe-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}.detalhe-item{padding:11px 12px;border:1px solid #e0e8ef;border-radius:12px;background:#f9fbfd;min-width:0}.detalhe-item span{display:block;color:#6f8397;text-transform:uppercase;font-size:8.5px;font-weight:900;letter-spacing:.4px;margin-bottom:4px}.detalhe-item strong{font-size:12px;word-break:break-word}.detalhe-evidencias{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.detalhe-evidencia{border:1px solid #dbe5ed;border-radius:14px;padding:10px;background:#f8fbfd}.detalhe-evidencia h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;color:#62798f}.detalhe-evidencia img{display:block;width:100%;height:250px;object-fit:contain;background:#fff;border:1px solid #e4eaf0;border-radius:10px}.nri-match-box{margin-top:16px;padding:13px;border:1px solid #d8e5ef;border-radius:14px;background:#f9fcff}.nri-match-box h4{margin:0 0 8px;font-size:12px}.nri-match-list{display:flex;flex-direction:column;gap:7px}.nri-match-item{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e1e8ef;background:#fff;border-radius:10px;font-size:11px}.nri-match-item strong{margin:0!important}.avaliacao-box{margin-top:14px;padding:12px 14px;border-radius:12px;background:#f7f9fb;border:1px solid #e0e7ee;font-size:11px;color:#52677c}.base-clientes-alerta{margin-top:8px;color:var(--danger);font-size:11px;font-weight:800}.admin-only.oculto,.nri-access.oculto,.avaria-access.oculto{display:none!important}
+@media(max-width:780px){.evidencias-grid,.detalhe-evidencias{grid-template-columns:1fr}.cliente-auto-card{grid-template-columns:auto 1fr}.cliente-auto-dados.cidade{grid-column:2;border-left:0;padding-left:0}.detalhe-grid{grid-template-columns:1fr 1fr}.foto-preview,.assinatura-wrap{height:190px}.nri-match-item{grid-template-columns:1fr}.lista-avaria-head{align-items:flex-start;flex-direction:column}.lista-avaria-head .btn{width:100%}}
+@media(max-width:520px){.detalhe-grid{grid-template-columns:1fr}.quantidade-com-unidade{grid-template-columns:1fr 90px}}
 </style>
 </head>
 <body>
@@ -190,7 +196,7 @@ button,input,select{font:inherit}
         <div class="user-avatar" id="userAvatar">U</div>
         <div class="user-info">
           <strong id="userNome">Usuário</strong>
-          <span id="userPerfil">COLABORADOR</span>
+          <span id="userPerfil">PERFIL</span>
         </div>
         <button class="logout-btn" id="btnSair" title="Sair do sistema">Sair</button>
       </div>
@@ -200,8 +206,8 @@ button,input,select{font:inherit}
       <div class="sidebar-brand">
         <div class="sidebar-logo">NRI</div>
         <div>
-          <strong>Gestão de NRI</strong>
-          <span>Armazém</span>
+          <strong>Gestão Operacional</strong>
+          <span>NRI • Avarias</span>
         </div>
       </div>
 
@@ -209,17 +215,21 @@ button,input,select{font:inherit}
         <div class="user-avatar" id="userAvatarMobile">U</div>
         <div>
           <strong id="userNomeMobile">Usuário</strong>
-          <span id="userPerfilMobile">COLABORADOR</span>
+          <span id="userPerfilMobile">PERFIL</span>
         </div>
       </div>
 
       <nav>
-        <button class="nav-item ativo" data-view="cadastro">
+        <button class="nav-item nri-access ativo" data-view="cadastro">
           <span class="nav-label"><span class="nav-icon">＋</span>Cadastro de NRI</span>
         </button>
-        <button class="nav-item" data-view="pendentes">
+        <button class="nav-item nri-access" data-view="pendentes">
           <span class="nav-label"><span class="nav-icon">▣</span>Impressões pendentes</span>
           <span class="badge" id="badgePendentes">0</span>
+        </button>
+        <button class="nav-item avaria-access" data-view="avarias">
+          <span class="nav-label"><span class="nav-icon">!</span>Avarias</span>
+          <span class="badge" id="badgeAvarias">0</span>
         </button>
         <button class="nav-item admin-only" data-view="historico">
           <span class="nav-label"><span class="nav-icon">↺</span>Histórico / rastreabilidade</span>
@@ -237,7 +247,7 @@ button,input,select{font:inherit}
     <div class="overlay" id="overlay"></div>
 
     <main class="content">
-      <section class="view ativo" id="view-cadastro">
+      <section class="view ativo nri-access" id="view-cadastro">
         <div class="page-head">
           <div>
             <div class="breadcrumb">Armazém <span>/</span> Impressão de NRI</div>
@@ -333,8 +343,8 @@ button,input,select{font:inherit}
                 <select id="fabrica" required></select>
               </div>
               <div class="field">
-                <label for="caixas">Caixas recebidas no palete *</label>
-                <input type="number" id="caixas" min="1" step="1" required value="1">
+                <label for="quantidade">Quantidade *</label>
+                <input type="number" id="quantidade" min="1" step="1" required value="1">
               </div>
               <div class="field">
                 <label for="qtdPaletes">Quantidade de paletes iguais (NRIs) *</label>
@@ -355,7 +365,7 @@ button,input,select{font:inherit}
         </div>
       </section>
 
-      <section class="view" id="view-pendentes">
+      <section class="view nri-access" id="view-pendentes">
         <div class="page-head">
           <div>
             <div class="breadcrumb">Armazém <span>/</span> Impressão de NRI</div>
@@ -392,11 +402,179 @@ button,input,select{font:inherit}
                   <th>Lote / Validade</th>
                   <th>Recebimento / Bloqueio</th>
                   <th>Unidade / Transporte</th>
-                  <th>Caixas</th>
+                  <th>Quantidade</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody id="tbodyPendentes"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view avaria-access" id="view-avarias">
+        <div class="page-head">
+          <div>
+            <div class="breadcrumb">Entrega <span>/</span> Controle de avarias</div>
+            <h1>Avarias</h1>
+            <p>Registre ocorrências com foto, assinatura do cliente e rastreabilidade por lote.</p>
+          </div>
+          <div class="page-chip" id="chipAvarias">Entrega</div>
+        </div>
+
+        <div class="card avaria-form-card">
+          <div class="notice">
+            <div class="notice-icon">!</div>
+            <div>A foto do produto avariado e a assinatura do cliente são <strong>obrigatórias</strong>. O entregador é identificado automaticamente pelo usuário conectado.</div>
+          </div>
+
+          <form id="formAvaria" novalidate>
+            <div class="section-title">Ocorrência e cliente</div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="avariaData">Data *</label>
+                <input type="date" id="avariaData" required>
+              </div>
+              <div class="field">
+                <label for="avariaEntregador">Entregador *</label>
+                <input id="avariaEntregador" readonly>
+              </div>
+              <div class="field">
+                <label for="avariaPdv">PDV *</label>
+                <input id="avariaPdv" list="listaPdvs" inputmode="numeric" autocomplete="off" placeholder="Digite o código do cliente" required>
+                <datalist id="listaPdvs"></datalist>
+              </div>
+              <div class="field">
+                <label for="avariaMapa">Mapa *</label>
+                <input id="avariaMapa" inputmode="numeric" autocomplete="off" placeholder="Digite o mapa" required>
+              </div>
+            </div>
+
+            <div class="cliente-auto-card" id="clienteAvariaCard">
+              <div class="cliente-auto-icon">⌂</div>
+              <div class="cliente-auto-dados">
+                <span>Cliente</span>
+                <strong id="avariaClienteNome">Digite um PDV para localizar o cliente</strong>
+              </div>
+              <div class="cliente-auto-dados cidade">
+                <span>Cidade</span>
+                <strong id="avariaCidade">—</strong>
+              </div>
+            </div>
+
+            <div class="section-title">Produto avariado</div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="avariaProduto">Produto avariado *</label>
+                <input id="avariaProduto" autocomplete="off" placeholder="Descreva o produto" required>
+              </div>
+              <div class="field">
+                <label for="avariaLote">Lote *</label>
+                <input id="avariaLote" autocomplete="off" placeholder="Digite o lote" required>
+              </div>
+              <div class="field">
+                <label for="avariaQuantidade">Quantidade avariada *</label>
+                <div class="quantidade-com-unidade">
+                  <input type="number" id="avariaQuantidade" min="0.01" step="0.01" inputmode="decimal" placeholder="Quantidade" required>
+                  <select id="avariaUnidadeQtd" required>
+                    <option value="">Unidade</option>
+                    <option value="CX">Cx</option>
+                    <option value="UN">Un</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="avariaMotivo">Motivo da avaria *</label>
+                <select id="avariaMotivo" required><option value="">Selecione</option></select>
+              </div>
+            </div>
+
+            <div class="section-title">Evidências obrigatórias</div>
+            <div class="evidencias-grid">
+              <div class="evidencia-box">
+                <div class="evidencia-head">
+                  <div><strong>Foto do produto avariado *</strong><span>Use a câmera ou envie uma foto do aparelho.</span></div>
+                  <span class="evidencia-status" id="fotoAvariaStatus">Pendente</span>
+                </div>
+                <div class="foto-preview vazio" id="fotoAvariaPreview"><span>&#128247;</span><small>Nenhuma foto adicionada</small></div>
+                <div class="evidencia-actions">
+                  <button type="button" class="btn secundario" id="btnCameraAvaria">Abrir câmera</button>
+                  <button type="button" class="btn secundario" id="btnArquivoAvaria">Enviar foto</button>
+                  <button type="button" class="btn secundario oculto" id="btnRemoverFotoAvaria">Remover</button>
+                </div>
+                <input type="file" id="fotoAvariaCamera" accept="image/*" capture="environment" class="oculto">
+                <input type="file" id="fotoAvariaArquivo" accept="image/*" class="oculto">
+              </div>
+
+              <div class="evidencia-box">
+                <div class="evidencia-head">
+                  <div><strong>Assinatura do cliente *</strong><span>Peça ao cliente para assinar no quadro abaixo.</span></div>
+                  <span class="evidencia-status" id="assinaturaStatus">Pendente</span>
+                </div>
+                <div class="assinatura-wrap">
+                  <canvas id="assinaturaCanvas" width="1000" height="320" aria-label="Campo para assinatura do cliente"></canvas>
+                  <span class="assinatura-placeholder" id="assinaturaPlaceholder">Assine aqui</span>
+                </div>
+                <div class="evidencia-actions">
+                  <button type="button" class="btn secundario" id="btnLimparAssinatura">Limpar assinatura</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn secundario" id="btnLimparAvaria">Limpar</button>
+              <button type="submit" class="btn primario" id="btnSalvarAvaria">Registrar avaria</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card avaria-list-card">
+          <div class="lista-avaria-head">
+            <div>
+              <div class="section-title sem-margem" id="tituloListaAvarias">Avarias registradas</div>
+              <p id="subtituloListaAvarias">Acompanhe o status dos seus lançamentos.</p>
+            </div>
+            <button class="btn secundario" id="btnAtualizarAvarias">Atualizar</button>
+          </div>
+
+          <div class="filters grid-4 compact admin-only" id="filtrosAvariasAdmin">
+            <div class="field span-2">
+              <label for="filtroAvarias">PDV, cliente, entregador, produto, lote ou mapa</label>
+              <input id="filtroAvarias" autocomplete="off" placeholder="Pesquisar avarias...">
+            </div>
+            <div class="field">
+              <label for="filtroStatusAvaria">Status</label>
+              <select id="filtroStatusAvaria">
+                <option value="">Todos</option>
+                <option value="PENDENTE">Pendente</option>
+                <option value="APROVADO">Aprovado</option>
+                <option value="REPROVADO">Reprovado</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filtroLoteAvaria">Validação do lote</label>
+              <select id="filtroLoteAvaria">
+                <option value="">Todos</option>
+                <option value="COMPATIVEL">Lote compatível</option>
+                <option value="NAO_ENCONTRADO">Lote não encontrado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap avaria-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data / PDV</th>
+                  <th>Entregador</th>
+                  <th>Produto / Lote</th>
+                  <th>Quantidade / Motivo</th>
+                  <th>Lote NRI</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyAvarias"></tbody>
             </table>
           </div>
         </div>
@@ -489,7 +667,8 @@ button,input,select{font:inherit}
               <div class="field">
                 <label for="novoPerfil">Perfil *</label>
                 <select id="novoPerfil">
-                  <option value="COLABORADOR">Colaborador</option>
+                  <option value="COLABORADOR_ARMAZEM">Colaborador Armazém</option>
+                  <option value="COLABORADOR_ENTREGA">Colaborador Entrega</option>
                   <option value="ADMIN">Admin</option>
                 </select>
               </div>
@@ -562,6 +741,26 @@ button,input,select{font:inherit}
       </div>
     </div>
 
+    <div class="modal" id="modalDetalheAvaria" aria-hidden="true">
+      <div class="modal-box modal-lg">
+        <div class="modal-head">
+          <div>
+            <span class="eyebrow">Avaria</span>
+            <strong>Detalhes da ocorrência</strong>
+          </div>
+          <button class="icon-btn" data-close="modalDetalheAvaria">×</button>
+        </div>
+        <div class="modal-body" id="detalheAvariaConteudo">
+          <div class="loading-row">Carregando informações...</div>
+        </div>
+        <div class="modal-actions coluna-mobile">
+          <button class="btn secundario" data-close="modalDetalheAvaria">Fechar</button>
+          <button class="btn perigo admin-only" id="btnReprovarAvariaModal">Reprovar</button>
+          <button class="btn primario admin-only" id="btnAprovarAvariaModal">Aprovar</button>
+        </div>
+      </div>
+    </div>
+
     <iframe id="printFrame" class="print-frame" title="Área de impressão"></iframe>
   </div>
 
@@ -572,22 +771,37 @@ const EXTENSOES_IMAGEM = ["png","jpg","jpeg","webp"];
 const TZ = "America/Fortaleza";
 const SESSION_KEY = "nri_session_v2";
 
-let config = { produtos: [], unidades: [], conferentes: [], turnos: [], motoristas: [], fabricas: [] };
+let config = { produtos: [], unidades: [], conferentes: [], turnos: [], motoristas: [], fabricas: [], clientes: [], motivosAvaria: [] };
 let pendentes = [];
 let historico = [];
 let usuarios = [];
+let avarias = [];
 let usuarioAtual = null;
 let tokenSessao = "";
 let produtoAtual = null;
 let previewAtual = null;
 let impressaoPendente = null;
 let enviandoCadastro = false;
+let enviandoAvaria = false;
+let fotoAvariaDataUrl = "";
+let assinaturaFeita = false;
+let desenhandoAssinatura = false;
+let avariaDetalheAtual = null;
 let timerAtualizacaoAutomatica = null;
 let atualizacaoAutomaticaEmAndamento = false;
 const AUTO_REFRESH_MS = 3000;
 
 const $ = id => document.getElementById(id);
 const isAdmin = () => usuarioAtual && usuarioAtual.perfil === "ADMIN";
+const isArmazem = () => usuarioAtual && ["ADMIN","COLABORADOR_ARMAZEM"].includes(usuarioAtual.perfil);
+const isEntrega = () => usuarioAtual && ["ADMIN","COLABORADOR_ENTREGA"].includes(usuarioAtual.perfil);
+const podeNri = () => isArmazem();
+const podeAvarias = () => isEntrega();
+function rotuloPerfil(perfil){
+  if(perfil === "ADMIN") return "Admin";
+  if(perfil === "COLABORADOR_ENTREGA") return "Colaborador Entrega";
+  return "Colaborador Armazém";
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   configurarEventosBase();
@@ -662,6 +876,22 @@ function configurarEventosBase(){
 
   $("formUsuario").addEventListener("submit", salvarUsuario);
   $("btnCancelarUsuario").addEventListener("click", limparFormularioUsuario);
+
+  $("avariaPdv").addEventListener("input", localizarClienteAvaria);
+  $("avariaLote").addEventListener("input", e => e.target.value = e.target.value.toUpperCase());
+  $("formAvaria").addEventListener("submit", salvarAvaria);
+  $("btnLimparAvaria").addEventListener("click", limparFormularioAvaria);
+  $("btnCameraAvaria").addEventListener("click", () => $("fotoAvariaCamera").click());
+  $("btnArquivoAvaria").addEventListener("click", () => $("fotoAvariaArquivo").click());
+  $("fotoAvariaCamera").addEventListener("change", onFotoAvariaSelecionada);
+  $("fotoAvariaArquivo").addEventListener("change", onFotoAvariaSelecionada);
+  $("btnRemoverFotoAvaria").addEventListener("click", limparFotoAvaria);
+  $("btnLimparAssinatura").addEventListener("click", limparAssinatura);
+  $("btnAtualizarAvarias").addEventListener("click", () => carregarAvarias());
+  ["filtroAvarias","filtroStatusAvaria","filtroLoteAvaria"].forEach(id => $(id).addEventListener(id === "filtroAvarias" ? "input" : "change", renderAvarias));
+  $("btnAprovarAvariaModal").addEventListener("click", () => avariaDetalheAtual && avaliarAvaria(avariaDetalheAtual.id,"APROVADO"));
+  $("btnReprovarAvariaModal").addEventListener("click", () => avariaDetalheAtual && avaliarAvaria(avariaDetalheAtual.id,"REPROVADO"));
+  configurarCanvasAssinatura();
 }
 
 async function restaurarSessao(){
@@ -724,26 +954,35 @@ async function iniciarAplicacao(){
   aplicarPerfil();
   $("loginScreen").classList.add("oculto");
   $("appShell").classList.remove("oculto");
-  abrirView("cadastro");
 
   await carregarConfig();
-  await carregarPendentes();
-  if(isAdmin()){
-    await Promise.all([carregarHistorico(), carregarUsuarios()]);
-  }
 
+  if(podeNri()) await carregarPendentes();
+  if(podeAvarias()) await carregarAvarias();
+  if(isAdmin()) await Promise.all([carregarHistorico(), carregarUsuarios()]);
+
+  preencherDatasPadrao();
+  limparFormularioAvaria();
+  abrirView(usuarioAtual?.perfil === "COLABORADOR_ENTREGA" ? "avarias" : "cadastro");
   iniciarAtualizacaoAutomatica();
 }
 
 function aplicarPerfil(){
   const nome = usuarioAtual?.nome || usuarioAtual?.usuario || "Usuário";
-  const perfil = usuarioAtual?.perfil || "COLABORADOR";
+  const perfil = usuarioAtual?.perfil || "COLABORADOR_ARMAZEM";
   const inicial = nome.trim().charAt(0).toUpperCase() || "U";
 
   ["userNome","userNomeMobile"].forEach(id => $(id).textContent = nome);
-  ["userPerfil","userPerfilMobile"].forEach(id => $(id).textContent = perfil === "ADMIN" ? "ADMIN" : "COLABORADOR");
+  ["userPerfil","userPerfilMobile"].forEach(id => $(id).textContent = rotuloPerfil(perfil));
   ["userAvatar","userAvatarMobile"].forEach(id => $(id).textContent = inicial);
   document.querySelectorAll(".admin-only").forEach(el => el.classList.toggle("oculto", !isAdmin()));
+  document.querySelectorAll(".nri-access").forEach(el => el.classList.toggle("oculto", !podeNri()));
+  document.querySelectorAll(".avaria-access").forEach(el => el.classList.toggle("oculto", !podeAvarias()));
+
+  if($("avariaEntregador")) $("avariaEntregador").value = nome;
+  if($("tituloListaAvarias")) $("tituloListaAvarias").textContent = isAdmin() ? "Todas as avarias" : "Minhas avarias";
+  if($("subtituloListaAvarias")) $("subtituloListaAvarias").textContent = isAdmin() ? "Analise, visualize e aprove ou reprove as ocorrências registradas pela entrega." : "Acompanhe o status dos seus lançamentos.";
+  if($("chipAvarias")) $("chipAvarias").textContent = isAdmin() ? "Gestão Admin" : "Entrega";
 }
 
 function mostrarLogin(msg=""){
@@ -774,9 +1013,14 @@ async function sair(){
 function limparSessaoLocal(){ localStorage.removeItem(SESSION_KEY); }
 
 function abrirView(nome){
+  if(["cadastro","pendentes"].includes(nome) && !podeNri()){
+    toast("Seu perfil não possui acesso aos módulos de NRI.","erro"); return;
+  }
+  if(nome === "avarias" && !podeAvarias()){
+    toast("Seu perfil não possui acesso ao módulo de Avarias.","erro"); return;
+  }
   if((nome === "historico" || nome === "usuarios") && !isAdmin()){
-    toast("Seu perfil não possui acesso a esta área.","erro");
-    return;
+    toast("Seu perfil não possui acesso a esta área.","erro"); return;
   }
   const target = $("view-"+nome);
   if(!target) return;
@@ -788,6 +1032,7 @@ function abrirView(nome){
   const titulos = {
     cadastro:["Cadastro de NRI","Identificação e rastreabilidade por palete"],
     pendentes:["Impressões pendentes","Três etiquetas idênticas por NRI em uma folha A4"],
+    avarias:["Avarias","Registro, evidências e aprovação de ocorrências"],
     historico:["Histórico / rastreabilidade","Consulta por lote, produto, NRI, usuário e transporte"],
     usuarios:["Usuários e perfis","Administração de acessos ao sistema"]
   };
@@ -841,6 +1086,16 @@ async function sincronizarTelaAtual(){
       return;
     }
 
+    if(view.id === "view-avarias" && podeAvarias()){
+      const d = await getApi("avarias");
+      if(d.status === "success"){
+        avarias = d.registros || [];
+        renderAvarias();
+        atualizarBadgeAvarias();
+      }
+      return;
+    }
+
     if(view.id === "view-historico" && isAdmin()){
       const d = await getApi("historico");
       if(d.status === "success"){
@@ -872,8 +1127,9 @@ document.addEventListener("visibilitychange", () => {
 
 function preencherDatasPadrao(){
   const agora = new Date();
-  $("recebimento").value = dataInputLocal(agora);
-  $("hora").value = horaInputLocal(agora);
+  if($("recebimento")) $("recebimento").value = dataInputLocal(agora);
+  if($("hora")) $("hora").value = horaInputLocal(agora);
+  if($("avariaData") && !$("avariaData").value) $("avariaData").value = dataInputLocal(agora);
 }
 
 async function carregarConfig(silencioso=false){
@@ -893,8 +1149,8 @@ function aplicarConfig(d, preservarValores=true){
     idsSelect.forEach(id => { const campo=$(id); valoresAtuais[id]=campo ? campo.value : ""; });
   }
 
-  config = d;
-  preencherSelect("unidade",config.unidades,"Selecione");
+  config = {...config,...d};
+  preencherSelect("unidade",config.unidades||[],"Selecione");
   preencherSelect("conferente",config.conferentes,"Selecione");
   preencherSelect("turno",config.turnos,"Selecione");
   preencherSelect("motorista",config.motoristas,"Selecione");
@@ -918,6 +1174,9 @@ function aplicarConfig(d, preservarValores=true){
   });
 
   if($("codigoProduto").value.trim()) localizarProdutoDigitado();
+  preencherClientesAvaria();
+  preencherMotivosAvaria();
+  if($("avariaPdv").value.trim()) localizarClienteAvaria();
 }
 
 function preencherSelect(id, lista, placeholder){
@@ -1018,13 +1277,13 @@ async function cadastrarNris(ev){
   ev.preventDefault(); if(enviandoCadastro) return;
   localizarProdutoDigitado();
   if(!produtoAtual) return toast("Código de produto não encontrado na base.","erro");
-  const ids=["unidade","validade","lote","recebimento","conferente","turno","hora","motorista","placa","fabrica","caixas","qtdPaletes"];
+  const ids=["unidade","validade","lote","recebimento","conferente","turno","hora","motorista","placa","fabrica","quantidade","qtdPaletes"];
   for(const id of ids){ if(!String($(id).value||"").trim()) return toast(`Preencha o campo ${document.querySelector(`label[for="${id}"]`).textContent.replace(" *","")}.`,"erro"); }
   if(Number($("qtdPaletes").value)<1 || Number($("qtdPaletes").value)>99) return toast("Quantidade de paletes deve ficar entre 1 e 99.","erro");
 
   enviandoCadastro=true; $("btnCadastrar").disabled=true; $("btnCadastrar").textContent="Salvando...";
   try{
-    const payload={acao:"criar",unidade:$("unidade").value,codigoProduto:produtoAtual.codigo,nomeProduto:produtoAtual.nome,validade:$("validade").value,lote:$("lote").value.trim(),recebimento:$("recebimento").value,conferente:$("conferente").value,turno:$("turno").value,hora:$("hora").value,motorista:$("motorista").value,placa:$("placa").value.trim(),fabrica:$("fabrica").value,caixas:Number($("caixas").value),quantidadePaletes:Number($("qtdPaletes").value)};
+    const payload={acao:"criar",unidade:$("unidade").value,codigoProduto:produtoAtual.codigo,nomeProduto:produtoAtual.nome,validade:$("validade").value,lote:$("lote").value.trim(),recebimento:$("recebimento").value,conferente:$("conferente").value,turno:$("turno").value,hora:$("hora").value,motorista:$("motorista").value,placa:$("placa").value.trim(),fabrica:$("fabrica").value,quantidade:Number($("quantidade").value),quantidadePaletes:Number($("qtdPaletes").value)};
     const d=await postApi(payload); if(d.status!=="success") throw new Error(d.message||"Erro ao cadastrar");
     toast(`${d.nris.length} NRI(s) cadastrado(s): ${d.nris.join(", ")}`,"sucesso");
     $("formCadastro").reset(); preencherDatasPadrao(); produtoAtual=null; resetPreviewProduto();
@@ -1052,7 +1311,7 @@ function renderPendentes(selecionadosPreservados=null){
   );
   const lista=filtrarPendentes(); $("qtdPendentes").textContent=lista.length; const tb=$("tbodyPendentes"); tb.innerHTML="";
   if(!lista.length){ tb.innerHTML='<tr><td colspan="7" class="empty-row">Nenhum NRI pendente.</td></tr>'; return; }
-  lista.forEach(r => { const tr=document.createElement("tr"); tr.innerHTML=`<td><input type="checkbox" class="sel-pendente" data-id="${esc(r.id)}"></td><td>${esc(r.nri)}<strong>${esc(r.codigoProduto)} - ${esc(r.nomeProduto)}</strong></td><td>${esc(r.lote)}<strong>${fmtData(r.validade)}</strong></td><td>${fmtData(r.recebimento)}<strong>${fmtData(r.bloqueio)}</strong></td><td>${esc(r.unidade)}<small>${esc(r.placa)} · ${esc(r.motorista)}</small></td><td>${esc(r.caixas)}</td><td><div class="acoes"><button class="btn-mini" data-act="ver">Visualizar</button><button class="btn-mini" data-act="imprimir">Imprimir</button><button class="btn-mini perigo" data-act="remover">Remover</button></div></td>`;
+  lista.forEach(r => { const tr=document.createElement("tr"); tr.innerHTML=`<td><input type="checkbox" class="sel-pendente" data-id="${esc(r.id)}"></td><td>${esc(r.nri)}<strong>${esc(r.codigoProduto)} - ${esc(r.nomeProduto)}</strong></td><td>${esc(r.lote)}<strong>${fmtData(r.validade)}</strong></td><td>${fmtData(r.recebimento)}<strong>${fmtData(r.bloqueio)}</strong></td><td>${esc(r.unidade)}<small>${esc(r.placa)} · ${esc(r.motorista)}</small></td><td>${esc(r.quantidade ?? r.caixas)}</td><td><div class="acoes"><button class="btn-mini" data-act="ver">Visualizar</button><button class="btn-mini" data-act="imprimir">Imprimir</button><button class="btn-mini perigo" data-act="remover">Remover</button></div></td>`;
     const checkbox = tr.querySelector('.sel-pendente');
     if(checkbox && selecionados.has(String(r.id))) checkbox.checked = true;
     tr.querySelector('[data-act="ver"]').onclick=()=>visualizarNri(r); tr.querySelector('[data-act="imprimir"]').onclick=()=>iniciarImpressao([r]); tr.querySelector('[data-act="remover"]').onclick=()=>removerNri(r); tb.appendChild(tr); });
@@ -1101,7 +1360,7 @@ function renderUsuarios(){
   if(!usuarios.length){ tb.innerHTML='<tr><td colspan="5" class="empty-row">Nenhum usuário cadastrado.</td></tr>'; return; }
   usuarios.forEach(u=>{
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td><strong>${esc(u.usuario)}</strong></td><td>${esc(u.nome)}</td><td><span class="status ${u.perfil==='ADMIN'?'impresso':'pendente'}">${esc(u.perfil)}</span></td><td>${u.ativo?'<span class="status impresso">ATIVO</span>':'<span class="status removido">INATIVO</span>'}</td><td><button class="btn-mini" data-edit>Editar</button></td>`;
+    tr.innerHTML=`<td><strong>${esc(u.usuario)}</strong></td><td>${esc(u.nome)}</td><td><span class="status ${u.perfil==='ADMIN'?'impresso':'pendente'}">${esc(rotuloPerfil(u.perfil))}</span></td><td>${u.ativo?'<span class="status impresso">ATIVO</span>':'<span class="status removido">INATIVO</span>'}</td><td><button class="btn-mini" data-edit>Editar</button></td>`;
     tr.querySelector("[data-edit]").onclick=()=>editarUsuario(u);
     tb.appendChild(tr);
   });
@@ -1121,7 +1380,7 @@ function editarUsuario(u){
 function limparFormularioUsuario(){
   $("formUsuario").reset();
   $("usuarioOriginal").value="";
-  $("novoPerfil").value="COLABORADOR";
+  $("novoPerfil").value="COLABORADOR_ARMAZEM";
   $("novoAtivo").checked=true;
   $("senhaOpcional").textContent="";
 }
@@ -1144,6 +1403,255 @@ async function salvarUsuario(ev){
     toast("Usuário salvo com sucesso.","sucesso"); limparFormularioUsuario(); await carregarUsuarios();
   }catch(e){ tratarErroApi(e); }
   finally{ $("btnSalvarUsuario").disabled=false; $("btnSalvarUsuario").textContent="Salvar usuário"; }
+}
+
+function preencherClientesAvaria(){
+  const dl=$("listaPdvs"); if(!dl) return;
+  dl.innerHTML="";
+  (config.clientes||[]).forEach(c=>{
+    const o=document.createElement("option");
+    o.value=String(c.codigo||"");
+    o.label=`${c.codigo} - ${c.nome} - ${c.cidade}`;
+    dl.appendChild(o);
+  });
+}
+
+function preencherMotivosAvaria(){
+  const s=$("avariaMotivo"); if(!s) return;
+  const atual=s.value;
+  s.innerHTML='<option value="">Selecione</option>';
+  (config.motivosAvaria||[]).forEach(m=>{
+    const o=document.createElement("option"); o.value=m; o.textContent=m; s.appendChild(o);
+  });
+  if(atual && [...s.options].some(o=>o.value===atual)) s.value=atual;
+}
+
+function localizarClienteAvaria(){
+  const codigo=String($("avariaPdv").value||"").trim();
+  const cliente=(config.clientes||[]).find(c=>String(c.codigo||"").trim().toUpperCase()===codigo.toUpperCase()) || null;
+  if(cliente){
+    $("avariaClienteNome").textContent=cliente.nome || "Cliente sem nome";
+    $("avariaCidade").textContent=cliente.cidade || "\u2014";
+    $("clienteAvariaCard").classList.add("localizado");
+    return cliente;
+  }
+  $("avariaClienteNome").textContent=codigo ? "PDV n\u00e3o encontrado" : "Digite um PDV para localizar o cliente";
+  $("avariaCidade").textContent="\u2014";
+  $("clienteAvariaCard").classList.remove("localizado");
+  return null;
+}
+
+async function onFotoAvariaSelecionada(ev){
+  const input=ev.target;
+  const file=input.files && input.files[0];
+  input.value="";
+  if(!file) return;
+  if(!String(file.type||"").startsWith("image/")) return toast("Selecione um arquivo de imagem.","erro");
+  try{
+    $("fotoAvariaStatus").textContent="Processando...";
+    fotoAvariaDataUrl=await comprimirImagem(file,1400,0.8);
+    const area=$("fotoAvariaPreview");
+    area.classList.remove("vazio");
+    area.innerHTML='<img alt="Foto da avaria">';
+    area.querySelector("img").src=fotoAvariaDataUrl;
+    $("fotoAvariaStatus").textContent="Foto pronta";
+    $("fotoAvariaStatus").classList.add("ok");
+    $("btnRemoverFotoAvaria").classList.remove("oculto");
+  }catch(e){
+    limparFotoAvaria();
+    toast("N\u00e3o foi poss\u00edvel processar a foto.","erro");
+  }
+}
+
+function comprimirImagem(file,maxDim=1400,qualidade=0.8){
+  return new Promise((resolve,reject)=>{
+    const leitor=new FileReader();
+    leitor.onerror=()=>reject(new Error("Falha ao ler imagem"));
+    leitor.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error("Imagem inv\u00e1lida"));
+      img.onload=()=>{
+        const escala=Math.min(1,maxDim/Math.max(img.naturalWidth||1,img.naturalHeight||1));
+        const w=Math.max(1,Math.round(img.naturalWidth*escala));
+        const h=Math.max(1,Math.round(img.naturalHeight*escala));
+        const c=document.createElement("canvas"); c.width=w; c.height=h;
+        const ctx=c.getContext("2d");
+        ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+        resolve(c.toDataURL("image/jpeg",qualidade));
+      };
+      img.src=leitor.result;
+    };
+    leitor.readAsDataURL(file);
+  });
+}
+
+function limparFotoAvaria(){
+  fotoAvariaDataUrl="";
+  const area=$("fotoAvariaPreview");
+  if(area){ area.classList.add("vazio"); area.innerHTML='<span>&#128247;</span><small>Nenhuma foto adicionada</small>'; }
+  if($("fotoAvariaStatus")){ $("fotoAvariaStatus").textContent="Pendente"; $("fotoAvariaStatus").classList.remove("ok"); }
+  if($("btnRemoverFotoAvaria")) $("btnRemoverFotoAvaria").classList.add("oculto");
+}
+
+function configurarCanvasAssinatura(){
+  const canvas=$("assinaturaCanvas"); if(!canvas) return;
+  const ctx=canvas.getContext("2d");
+  const limparBase=()=>{ ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height); };
+  limparBase();
+  ctx.strokeStyle="#162b3d"; ctx.lineWidth=6; ctx.lineCap="round"; ctx.lineJoin="round";
+
+  const ponto=(e)=>{
+    const r=canvas.getBoundingClientRect();
+    return {x:(e.clientX-r.left)*(canvas.width/r.width),y:(e.clientY-r.top)*(canvas.height/r.height)};
+  };
+  canvas.addEventListener("pointerdown",e=>{
+    e.preventDefault(); desenhandoAssinatura=true; canvas.setPointerCapture?.(e.pointerId);
+    const p=ponto(e); ctx.beginPath(); ctx.moveTo(p.x,p.y);
+  });
+  canvas.addEventListener("pointermove",e=>{
+    if(!desenhandoAssinatura) return; e.preventDefault(); const p=ponto(e); ctx.lineTo(p.x,p.y); ctx.stroke();
+    assinaturaFeita=true; atualizarStatusAssinatura();
+  });
+  const fim=e=>{ if(!desenhandoAssinatura) return; e.preventDefault(); desenhandoAssinatura=false; ctx.closePath(); };
+  canvas.addEventListener("pointerup",fim); canvas.addEventListener("pointercancel",fim); canvas.addEventListener("pointerleave",fim);
+}
+
+function atualizarStatusAssinatura(){
+  $("assinaturaPlaceholder").classList.toggle("oculto",assinaturaFeita);
+  $("assinaturaStatus").textContent=assinaturaFeita?"Assinada":"Pendente";
+  $("assinaturaStatus").classList.toggle("ok",assinaturaFeita);
+}
+
+function limparAssinatura(){
+  const canvas=$("assinaturaCanvas"); if(!canvas) return;
+  const ctx=canvas.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle="#162b3d"; ctx.lineWidth=6; ctx.lineCap="round"; ctx.lineJoin="round";
+  assinaturaFeita=false; desenhandoAssinatura=false; atualizarStatusAssinatura();
+}
+
+function limparFormularioAvaria(){
+  const form=$("formAvaria"); if(!form) return;
+  form.reset();
+  $("avariaData").value=dataInputLocal(new Date());
+  $("avariaEntregador").value=usuarioAtual?.nome || usuarioAtual?.usuario || "";
+  limparFotoAvaria(); limparAssinatura(); localizarClienteAvaria(); preencherMotivosAvaria();
+}
+
+async function salvarAvaria(ev){
+  ev.preventDefault(); if(enviandoAvaria || !podeAvarias()) return;
+  const cliente=localizarClienteAvaria();
+  if(!$("avariaData").value) return toast("Informe a data da avaria.","erro");
+  if(!cliente) return toast("Informe um PDV v\u00e1lido da base de clientes.","erro");
+  const ids=["avariaMapa","avariaProduto","avariaLote","avariaQuantidade","avariaUnidadeQtd","avariaMotivo"];
+  for(const id of ids){ if(!String($(id).value||"").trim()) return toast(`Preencha o campo ${document.querySelector(`label[for="${id}"]`)?.textContent.replace(" *","") || id}.`,"erro"); }
+  if(!fotoAvariaDataUrl) return toast("A foto do produto avariado \u00e9 obrigat\u00f3ria.","erro");
+  if(!assinaturaFeita) return toast("A assinatura do cliente \u00e9 obrigat\u00f3ria.","erro");
+
+  enviandoAvaria=true; $("btnSalvarAvaria").disabled=true; $("btnSalvarAvaria").textContent="Enviando evid\u00eancias...";
+  try{
+    const d=await postApi({
+      acao:"salvarAvaria",data:$("avariaData").value,pdv:$("avariaPdv").value.trim(),mapa:$("avariaMapa").value.trim(),
+      produtoAvariado:$("avariaProduto").value.trim(),lote:$("avariaLote").value.trim(),quantidadeAvariada:Number($("avariaQuantidade").value),
+      unidadeQuantidade:$("avariaUnidadeQtd").value,motivoAvaria:$("avariaMotivo").value,fotoDataUrl:fotoAvariaDataUrl,
+      assinaturaDataUrl:$("assinaturaCanvas").toDataURL("image/png")
+    });
+    if(d.status!=="success") throw new Error(d.message||"Erro ao registrar avaria.");
+    toast(d.loteCompativel?"Avaria registrada. Lote compat\u00edvel com o hist\u00f3rico NRI.":"Avaria registrada. O lote n\u00e3o foi encontrado no hist\u00f3rico NRI.","sucesso");
+    limparFormularioAvaria(); await carregarAvarias(true);
+  }catch(e){ tratarErroApi(e); }
+  finally{ enviandoAvaria=false; $("btnSalvarAvaria").disabled=false; $("btnSalvarAvaria").textContent="Registrar avaria"; }
+}
+
+async function carregarAvarias(silencioso=false){
+  if(!podeAvarias()) return;
+  if(!silencioso) $("tbodyAvarias").innerHTML='<tr><td colspan="7" class="loading-row">Carregando avarias...</td></tr>';
+  try{
+    const d=await getApi("avarias"); if(d.status!=="success") throw new Error(d.message);
+    avarias=d.registros||[]; renderAvarias(); atualizarBadgeAvarias();
+  }catch(e){ if(!silencioso) $("tbodyAvarias").innerHTML='<tr><td colspan="7" class="empty-row">Falha ao carregar avarias.</td></tr>'; tratarErroApi(e); }
+}
+
+function filtrarAvarias(){
+  if(!isAdmin()) return avarias;
+  const q=normalizar($("filtroAvarias").value), st=$("filtroStatusAvaria").value, lote=$("filtroLoteAvaria").value;
+  return avarias.filter(r=>{
+    const alvo=normalizar([r.pdv,r.cliente,r.cidade,r.entregadorNome,r.produtoAvariado,r.lote,r.mapa,r.motivoAvaria].join(" "));
+    const loteOk=!lote || (lote==="COMPATIVEL"?!!r.loteCompativel:!r.loteCompativel);
+    return (!q||alvo.includes(q))&&(!st||r.status===st)&&loteOk;
+  });
+}
+
+function renderAvarias(){
+  if(!podeAvarias()) return;
+  const lista=filtrarAvarias(), tb=$("tbodyAvarias"); tb.innerHTML="";
+  if(!lista.length){ tb.innerHTML='<tr><td colspan="7" class="empty-row">Nenhuma avaria encontrada.</td></tr>'; return; }
+  lista.forEach(r=>{
+    const tr=document.createElement("tr");
+    const comp=r.loteCompativel?'<span class="lote-badge ok">Lote compat\u00edvel</span>':'<span class="lote-badge nao">Lote n\u00e3o encontrado</span>';
+    const cls=String(r.status||"pendente").toLowerCase();
+    const acoes=isAdmin() && r.status==="PENDENTE"
+      ? '<button class="btn-mini" data-ver>Visualizar</button><button class="btn-mini aprovar" data-aprovar>Aprovar</button><button class="btn-mini perigo" data-reprovar>Reprovar</button>'
+      : '<button class="btn-mini" data-ver>Visualizar</button>';
+    tr.innerHTML=`<td>${fmtData(r.data)}<strong>PDV ${esc(r.pdv)} - ${esc(r.cliente)}</strong><small>${esc(r.cidade)} \u2022 Mapa ${esc(r.mapa)}</small></td><td><strong>${esc(r.entregadorNome||r.entregadorUsuario)}</strong><small>${esc(r.criadoEm||"")}</small></td><td><strong>${esc(r.produtoAvariado)}</strong><small>Lote: ${esc(r.lote)}</small></td><td><strong>${esc(r.quantidadeAvariada)} ${esc(formatarUnidadeAvaria(r.unidadeQuantidade))}</strong><small>${esc(r.motivoAvaria)}</small></td><td>${comp}</td><td><span class="status ${cls}">${esc(r.status)}</span>${r.avaliadoPorNome?`<small>Por ${esc(r.avaliadoPorNome)} em ${esc(r.avaliadoEm)}</small>`:""}</td><td><div class="acoes">${acoes}</div></td>`;
+    tr.querySelector("[data-ver]").onclick=()=>visualizarAvaria(r);
+    const ap=tr.querySelector("[data-aprovar]"); if(ap) ap.onclick=()=>avaliarAvaria(r.id,"APROVADO");
+    const rp=tr.querySelector("[data-reprovar]"); if(rp) rp.onclick=()=>avaliarAvaria(r.id,"REPROVADO");
+    tb.appendChild(tr);
+  });
+}
+
+function formatarUnidadeAvaria(v){ return String(v||"").toUpperCase()==="CX"?"Cx":"Un"; }
+function atualizarBadgeAvarias(){ if($("badgeAvarias")) $("badgeAvarias").textContent=avarias.filter(a=>a.status==="PENDENTE").length; }
+
+async function visualizarAvaria(r){
+  avariaDetalheAtual=r; abrirModal("modalDetalheAvaria");
+  $("detalheAvariaConteudo").innerHTML='<div class="loading-row">Carregando foto, assinatura e rastreabilidade...</div>';
+  try{
+    const d=await getApi("detalheAvaria",{id:r.id}); if(d.status!=="success") throw new Error(d.message);
+    avariaDetalheAtual=d.registro;
+    const a=d.registro;
+    const comp=a.loteCompativel?'<span class="lote-badge ok">Lote compat\u00edvel</span>':'<span class="lote-badge nao">Lote n\u00e3o encontrado</span>';
+    const matches=isAdmin()?renderCorrespondenciasNri(d.correspondenciasNri||[]):"";
+    $("detalheAvariaConteudo").innerHTML=`
+      <div class="detalhe-grid">
+        ${detalheItem("Data",fmtData(a.data))}${detalheItem("Entregador",a.entregadorNome)}${detalheItem("Status",a.status)}
+        ${detalheItem("PDV",a.pdv+" - "+a.cliente)}${detalheItem("Cidade",a.cidade)}${detalheItem("Mapa",a.mapa)}
+        ${detalheItem("Produto avariado",a.produtoAvariado)}${detalheItem("Lote",a.lote)}${detalheItem("Quantidade",a.quantidadeAvariada+" "+formatarUnidadeAvaria(a.unidadeQuantidade))}
+        ${detalheItem("Motivo",a.motivoAvaria)}<div class="detalhe-item"><span>Compara\u00e7\u00e3o com NRI</span><strong>${comp}</strong></div>${detalheItem("Registrado em",a.criadoEm)}
+      </div>
+      <div class="detalhe-evidencias">
+        <div class="detalhe-evidencia"><h4>Foto do produto avariado</h4><img id="detalheFotoAvaria" alt="Foto do produto avariado"></div>
+        <div class="detalhe-evidencia"><h4>Assinatura do cliente</h4><img id="detalheAssinaturaAvaria" alt="Assinatura do cliente"></div>
+      </div>
+      ${matches}
+      ${a.avaliadoPorNome?`<div class="avaliacao-box"><strong>Avaliado por:</strong> ${esc(a.avaliadoPorNome)} em ${esc(a.avaliadoEm||"")} ${a.observacaoAvaliacao?`<br><strong>Observa\u00e7\u00e3o:</strong> ${esc(a.observacaoAvaliacao)}`:""}</div>`:""}`;
+    const foto=$("detalheFotoAvaria"); if(foto){ if(d.fotoDataUrl) foto.src=d.fotoDataUrl; else foto.replaceWith(document.createTextNode("Foto indispon\u00edvel")); }
+    const ass=$("detalheAssinaturaAvaria"); if(ass){ if(d.assinaturaDataUrl) ass.src=d.assinaturaDataUrl; else ass.replaceWith(document.createTextNode("Assinatura indispon\u00edvel")); }
+    $("btnAprovarAvariaModal").classList.toggle("oculto",!isAdmin()||a.status!=="PENDENTE");
+    $("btnReprovarAvariaModal").classList.toggle("oculto",!isAdmin()||a.status!=="PENDENTE");
+  }catch(e){ $("detalheAvariaConteudo").innerHTML=`<div class="empty-row">${esc(e.message||e)}</div>`; }
+}
+
+function detalheItem(rotulo,valor){ return `<div class="detalhe-item"><span>${esc(rotulo)}</span><strong>${esc(valor||"-")}</strong></div>`; }
+function renderCorrespondenciasNri(lista){
+  if(!lista.length) return '<div class="nri-match-box"><h4>Rastreabilidade NRI</h4><span class="lote-badge nao">Lote n\u00e3o encontrado no hist\u00f3rico de NRI</span></div>';
+  return `<div class="nri-match-box"><h4>Rastreabilidade NRI - ${lista.length} correspond\u00eancia(s)</h4><div class="nri-match-list">${lista.map(n=>`<div class="nri-match-item"><strong>${esc(n.nri)}</strong><span>${esc(n.codigoProduto)} - ${esc(n.nomeProduto)}</span><span>${esc(n.unidade)} \u2022 ${fmtData(n.validade)}</span></div>`).join("")}</div></div>`;
+}
+
+async function avaliarAvaria(id,decisao){
+  if(!isAdmin()) return;
+  let observacao="";
+  if(decisao==="APROVADO"){
+    if(!confirm("Aprovar esta avaria?")) return;
+  }else{
+    const resp=prompt("Observa\u00e7\u00e3o da reprova\u00e7\u00e3o (opcional):","");
+    if(resp===null) return; observacao=resp;
+  }
+  try{
+    const d=await postApi({acao:"avaliarAvaria",id,decisao,observacao}); if(d.status!=="success") throw new Error(d.message);
+    toast(decisao==="APROVADO"?"Avaria aprovada.":"Avaria reprovada.","sucesso");
+    fecharModal("modalDetalheAvaria"); avariaDetalheAtual=null; await carregarAvarias(true);
+  }catch(e){ tratarErroApi(e); }
 }
 
 function visualizarNri(r){ previewAtual=r; $("previewConteudo").innerHTML=htmlEtiqueta(r,false); carregarImagensPreview(); abrirModal("modalPreview"); }
@@ -1215,7 +1723,7 @@ function htmlEtiqueta(r, paraImpressao){
     </div>
     <div class="nri-bottom">
       <div><b>Fábrica:</b>${esc(r.fabrica)}</div>
-      <div><b>Caixas:</b>${esc(r.caixas)}</div>
+      <div><b>Quantidade:</b>${esc(r.quantidade ?? r.caixas)}</div>
       <div><b>NRI:</b>${esc(r.nri)}</div>
     </div>
   </div>`;
