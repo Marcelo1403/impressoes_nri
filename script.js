@@ -2,8 +2,8 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKUbmHswmXauzd6dZV
 const PASTA_IMAGENS = "imagens_produtos";
 const EXTENSOES_IMAGEM = ["png","jpg","jpeg","webp"];
 const TZ = "America/Fortaleza";
-const SESSION_KEY = "nri_session_v17";
-const LEGACY_SESSION_KEYS = ["nri_session_v2"];
+const SESSION_KEY = "nri_session_v18";
+const LEGACY_SESSION_KEYS = ["nri_session_v17","nri_session_v2"];
 
 let config = { produtos: [], unidades: [], conferentes: [], turnos: [], motoristas: [], fabricas: [], clientes: [], motivosAvaria: [] };
 let pendentes = [];
@@ -16,6 +16,8 @@ let produtoAtual = null;
 let previewAtual = null;
 let impressaoPendente = null;
 let enviandoCadastro = false;
+let lotesNri = [];
+let loteNriEditandoId = "";
 let enviandoAvaria = false;
 let fotoAvariaDataUrl = "";
 let fotoAvariaGps = null;
@@ -97,9 +99,12 @@ function configurarEventosBase(){
 
   $("codigoProduto").addEventListener("input", localizarProdutoDigitado);
   $("validade").addEventListener("change", atualizarBloqueio);
+  $("lote").addEventListener("input", e => e.target.value = e.target.value.toUpperCase());
   $("formCadastro").addEventListener("submit", cadastrarNris);
-  $("formCadastro").addEventListener("reset", () => setTimeout(() => { produtoAtual=null; resetPreviewProduto(); preencherDatasPadrao(); }, 0));
+  $("formCadastro").addEventListener("reset", () => setTimeout(() => { produtoAtual=null; resetPreviewProduto(); limparLotesNri(); preencherDatasPadrao(); }, 0));
   $("btnUltimoCadastro").addEventListener("click", preencherComUltimoCadastro);
+  $("btnAdicionarLoteNri").addEventListener("click", adicionarLoteNri);
+  $("btnCancelarEdicaoLoteNri").addEventListener("click", limparEditorLoteNri);
   $("placa").addEventListener("input", e => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""));
 
   $("filtroPendentes").addEventListener("input", renderPendentes);
@@ -562,31 +567,183 @@ function carregarImagemComFallback(img, codigo){
   img.onerror();
 }
 
+function calcularBloqueioInput(validade){
+  if(!validade) return "";
+  const d=new Date(validade+"T12:00:00");
+  d.setDate(d.getDate()-30);
+  return dataInputLocal(d);
+}
+
 function atualizarBloqueio(){
-  const v=$("validade").value; if(!v){ $("bloqueio").value=""; return; }
-  const d=new Date(v+"T12:00:00"); d.setDate(d.getDate()-30); $("bloqueio").value=dataInputLocal(d);
+  const v=$("validade").value;
+  $("bloqueio").value=calcularBloqueioInput(v);
+}
+
+function gerarIdTemporarioLoteNri(){
+  if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+  return "lote-nri-"+Date.now()+"-"+Math.random().toString(16).slice(2);
+}
+
+function adicionarLoteNri(){
+  localizarProdutoDigitado();
+  if(!produtoAtual) return toast("Informe um código de produto válido antes de adicionar o lote.","erro");
+  if(!String($("unidade").value||"").trim()) return toast("Selecione a unidade antes de adicionar o lote.","erro");
+
+  const validade=String($("validade").value||"").trim();
+  const lote=String($("lote").value||"").trim().toUpperCase();
+  const quantidade=Number($("quantidade").value);
+  const quantidadePaletes=Number($("qtdPaletes").value);
+  if(!validade) return toast("Informe a validade.","erro");
+  if(!lote) return toast("Informe o lote.","erro");
+  if(!Number.isFinite(quantidade) || quantidade<=0) return toast("Informe uma quantidade válida.","erro");
+  if(!Number.isInteger(quantidadePaletes) || quantidadePaletes<1 || quantidadePaletes>99) return toast("Quantidade de paletes deve ficar entre 1 e 99.","erro");
+
+  const item={
+    idTemp:loteNriEditandoId||gerarIdTemporarioLoteNri(),
+    validade,
+    lote,
+    quantidade,
+    quantidadePaletes,
+    bloqueio:calcularBloqueioInput(validade)
+  };
+
+  if(loteNriEditandoId){
+    const idx=lotesNri.findIndex(x=>x.idTemp===loteNriEditandoId);
+    if(idx>=0) lotesNri[idx]=item;
+    toast("Lote atualizado na requisição.","sucesso");
+  }else{
+    lotesNri.push(item);
+    toast(`${quantidadePaletes} NRI(s) adicionada(s) para o lote ${lote}.`,"sucesso");
+  }
+
+  limparEditorLoteNri();
+  renderLotesNri();
+  atualizarTravamentoProdutoNri();
+}
+
+function editarLoteNri(id){
+  const item=lotesNri.find(x=>x.idTemp===id);
+  if(!item) return;
+  loteNriEditandoId=id;
+  $("validade").value=item.validade;
+  $("lote").value=item.lote;
+  $("quantidade").value=item.quantidade;
+  $("qtdPaletes").value=item.quantidadePaletes;
+  $("bloqueio").value=item.bloqueio||calcularBloqueioInput(item.validade);
+  $("btnAdicionarLoteNri").textContent="Salvar alteração";
+  $("btnCancelarEdicaoLoteNri").classList.remove("oculto");
+  $("validade").scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+function removerLoteNri(id){
+  const item=lotesNri.find(x=>x.idTemp===id);
+  if(!item) return;
+  lotesNri=lotesNri.filter(x=>x.idTemp!==id);
+  if(loteNriEditandoId===id) limparEditorLoteNri();
+  renderLotesNri();
+  atualizarTravamentoProdutoNri();
+  toast(`Lote ${item.lote} removido da requisição.`);
+}
+
+function limparEditorLoteNri(){
+  loteNriEditandoId="";
+  $("validade").value="";
+  $("lote").value="";
+  $("quantidade").value="1";
+  $("qtdPaletes").value="1";
+  $("bloqueio").value="";
+  $("btnAdicionarLoteNri").textContent="+ Adicionar lote / validade";
+  $("btnCancelarEdicaoLoteNri").classList.add("oculto");
+}
+
+function limparLotesNri(){
+  lotesNri=[];
+  limparEditorLoteNri();
+  renderLotesNri();
+  atualizarTravamentoProdutoNri();
+}
+
+function atualizarTravamentoProdutoNri(){
+  const travar=lotesNri.length>0;
+  const codigo=$("codigoProduto"), unidade=$("unidade");
+  codigo.disabled=travar;
+  unidade.disabled=travar;
+  const bloco=codigo.closest('.grid-2');
+  if(bloco) bloco.classList.toggle('nri-produto-travado',travar);
+}
+
+function renderLotesNri(){
+  const box=$("listaLotesNri");
+  const totalNris=lotesNri.reduce((s,x)=>s+Number(x.quantidadePaletes||0),0);
+  $("contadorLotesNri").textContent=`${lotesNri.length} lote(s) • ${totalNris} NRI(s)`;
+  $("btnCadastrar").textContent=totalNris ? `Cadastrar requisição (${totalNris} NRI${totalNris===1?"":"s"})` : "Cadastrar requisição de NRI";
+  if(!lotesNri.length){
+    box.innerHTML='<div class="nri-lotes-vazio">Nenhum lote adicionado. Adicione ao menos um lote/validade antes de cadastrar.</div>';
+    return;
+  }
+  box.innerHTML=lotesNri.map((item,idx)=>`<div class="nri-lote-item">
+    <div class="nri-lote-info"><span>Validade</span><strong>${fmtData(item.validade)}</strong></div>
+    <div class="nri-lote-info"><span>Lote</span><strong>${esc(item.lote)}</strong></div>
+    <div class="nri-lote-info"><span>Quantidade</span><strong>${esc(item.quantidade)}</strong></div>
+    <div class="nri-lote-info"><span>Paletes / NRIs</span><strong>${esc(item.quantidadePaletes)}</strong></div>
+    <div class="nri-lote-info"><span>Bloqueio</span><strong>${fmtData(item.bloqueio)}</strong></div>
+    <div class="acoes"><button type="button" class="btn-mini" data-edit-lote="${esc(item.idTemp)}">Editar</button><button type="button" class="btn-mini perigo" data-remove-lote="${esc(item.idTemp)}">Remover</button></div>
+  </div>`).join("");
+  box.querySelectorAll('[data-edit-lote]').forEach(btn=>btn.addEventListener('click',()=>editarLoteNri(btn.dataset.editLote)));
+  box.querySelectorAll('[data-remove-lote]').forEach(btn=>btn.addEventListener('click',()=>removerLoteNri(btn.dataset.removeLote)));
 }
 
 async function cadastrarNris(ev){
-  ev.preventDefault(); if(enviandoCadastro) return;
+  ev.preventDefault();
+  if(enviandoCadastro) return;
   localizarProdutoDigitado();
   if(!produtoAtual) return toast("Código de produto não encontrado na base.","erro");
-  const ids=["unidade","validade","lote","recebimento","conferente","turno","hora","motorista","placa","fabrica","quantidade","qtdPaletes"];
-  for(const id of ids){ if(!String($(id).value||"").trim()) return toast(`Preencha o campo ${document.querySelector(`label[for="${id}"]`).textContent.replace(" *","")}.`,"erro"); }
-  if(Number($("qtdPaletes").value)<1 || Number($("qtdPaletes").value)>99) return toast("Quantidade de paletes deve ficar entre 1 e 99.","erro");
 
-  enviandoCadastro=true; $("btnCadastrar").disabled=true; $("btnCadastrar").textContent="Salvando...";
+  const ids=["unidade","recebimento","conferente","turno","hora","motorista","placa","fabrica"];
+  for(const id of ids){
+    if(!String($(id).value||"").trim()) return toast(`Preencha o campo ${document.querySelector(`label[for="${id}"]`).textContent.replace(" *","")}.`,"erro");
+  }
+  if(!lotesNri.length) return toast("Adicione ao menos um lote/validade à requisição antes de cadastrar.","erro");
+
+  const totalNris=lotesNri.reduce((s,x)=>s+Number(x.quantidadePaletes||0),0);
+  enviandoCadastro=true;
+  $("btnCadastrar").disabled=true;
+  $("btnCadastrar").textContent=`Salvando ${totalNris} NRI(s)...`;
   await esperar(0);
   try{
-    const payload={acao:"criar",unidade:$("unidade").value,codigoProduto:produtoAtual.codigo,nomeProduto:produtoAtual.nome,validade:$("validade").value,lote:$("lote").value.trim(),recebimento:$("recebimento").value,conferente:$("conferente").value,turno:$("turno").value,hora:$("hora").value,motorista:$("motorista").value,placa:$("placa").value.trim(),fabrica:$("fabrica").value,quantidade:Number($("quantidade").value),quantidadePaletes:Number($("qtdPaletes").value)};
-    const d=await postApi(payload); if(d.status!=="success") throw new Error(d.message||"Erro ao cadastrar");
-    toast(`${d.nris.length} NRI(s) cadastrado(s): ${d.nris.join(", ")}`,"sucesso");
-    $("formCadastro").reset(); preencherDatasPadrao(); produtoAtual=null; resetPreviewProduto();
+    const payload={
+      acao:"criarRequisicaoNri",
+      unidade:$("unidade").value,
+      codigoProduto:produtoAtual.codigo,
+      nomeProduto:produtoAtual.nome,
+      recebimento:$("recebimento").value,
+      conferente:$("conferente").value,
+      turno:$("turno").value,
+      hora:$("hora").value,
+      motorista:$("motorista").value,
+      placa:$("placa").value.trim(),
+      fabrica:$("fabrica").value,
+      lotes:lotesNri.map(x=>({validade:x.validade,lote:x.lote,quantidade:Number(x.quantidade),quantidadePaletes:Number(x.quantidadePaletes)}))
+    };
+    const d=await postApi(payload);
+    if(d.status!=="success") throw new Error(d.message||"Erro ao cadastrar");
+    toast(`${d.nris.length} NRI(s) cadastrada(s) em ${d.totalLotes||lotesNri.length} lote(s).`,"sucesso");
+    $("formCadastro").reset();
+    preencherDatasPadrao();
+    produtoAtual=null;
+    resetPreviewProduto();
+    limparLotesNri();
     abrirView("pendentes", true);
     carregarPendentes(true);
     if(isAdmin()) carregarHistorico(true);
-  }catch(e){ tratarErroApi(e); }
-  finally{ enviandoCadastro=false; $("btnCadastrar").disabled=false; $("btnCadastrar").textContent="Cadastrar NRI(s)"; }
+  }catch(e){
+    tratarErroApi(e);
+    renderLotesNri();
+  }finally{
+    enviandoCadastro=false;
+    $("btnCadastrar").disabled=false;
+    renderLotesNri();
+  }
 }
 
 async function carregarPendentes(silencioso=false){
