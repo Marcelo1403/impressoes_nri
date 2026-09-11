@@ -139,3 +139,19 @@ button,input,select{font:inherit}
 .avaria-item-evidencias-admin{display:flex;flex-direction:column;gap:10px}.mapa-gps-card{border:1px solid #dce5ed;border-radius:12px;background:#f8fbfd;overflow:hidden}.mapa-gps-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border-bottom:1px solid #dce5ed}.mapa-gps-head>div{min-width:0;display:flex;flex-direction:column;gap:2px}.mapa-gps-head strong{font-size:10.5px;color:#314b63}.mapa-gps-head span{font-size:9px;color:#72869a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mapa-gps-head a{flex:0 0 auto;font-size:9.5px;font-weight:900;color:var(--blue);text-decoration:none}.mapa-gps-card iframe{display:block;width:100%;height:220px;border:0;background:#eef3f7}.mapa-gps-vazio{padding:18px;border:1px dashed #ccd9e4;border-radius:12px;background:#f8fbfd;color:#7b8ea0;text-align:center;font-size:10px}.item-avaria-cadastro{grid-template-columns:54px minmax(0,1.7fr) minmax(110px,.6fr) minmax(130px,.7fr) minmax(170px,1fr) minmax(115px,.65fr) auto}
 @media(max-width:900px){.item-avaria-cadastro{grid-template-columns:44px 1fr 1fr auto}.item-avaria-cadastro .item-avaria-info:nth-of-type(4),.item-avaria-cadastro .item-avaria-info:nth-of-type(5),.item-avaria-cadastro .item-avaria-info:nth-of-type(6){grid-column:2/4}}
 @media(max-width:680px){.mapa-gps-card iframe{height:240px}.mapa-gps-head{align-items:flex-start;flex-direction:column}.item-avaria-cadastro .item-avaria-info{grid-column:2}.item-avaria-cadastro .item-avaria-acoes{grid-column:2/4}}
+
+
+/* V18 - Requisicao NRI com multiplos lotes/validades */
+.nri-lotes-title{margin-top:24px}
+.nri-lote-editor{border:1px solid #cedfec;background:linear-gradient(135deg,#f8fbff,#f0f7fc);border-radius:17px;padding:16px;margin-bottom:14px}
+.nri-lote-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:15px}
+.nri-lote-editor-head>div{display:flex;flex-direction:column;gap:4px}.nri-lote-editor-head strong{font-size:13px;color:#173651}.nri-lote-editor-head span:not(.nri-lote-contador){font-size:11px;color:#63798d;line-height:1.4}
+.nri-lote-contador{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;background:#e3f1fc;color:#075ca8;font-size:10px;font-weight:900;white-space:nowrap}
+.nri-lote-editor-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:14px;flex-wrap:wrap}
+.nri-lotes-lista{display:flex;flex-direction:column;gap:9px;margin:0 0 18px}
+.nri-lotes-vazio{padding:15px;border:1px dashed #c8d7e4;border-radius:13px;background:#fafcfe;color:#73879a;text-align:center;font-size:12px}
+.nri-lote-item{display:grid;grid-template-columns:minmax(120px,.85fr) minmax(130px,1fr) minmax(90px,.65fr) minmax(120px,.8fr) minmax(115px,.75fr) auto;gap:10px;align-items:center;padding:11px 12px;border:1px solid #d7e2eb;border-radius:13px;background:#fff;box-shadow:0 5px 16px rgba(20,60,90,.04)}
+.nri-lote-info{min-width:0;display:flex;flex-direction:column;gap:3px}.nri-lote-info span{font-size:8.5px;color:#708397;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.nri-lote-info strong{font-size:12px;color:#1b344d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nri-lote-item .acoes{justify-content:flex-end}
+.nri-produto-travado{opacity:.78}.nri-produto-travado input,.nri-produto-travado select{background:#f4f7fa!important;cursor:not-allowed}
+@media(max-width:900px){.nri-lote-item{grid-template-columns:repeat(3,minmax(0,1fr))}.nri-lote-item .acoes{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:580px){.nri-lote-editor-head{flex-direction:column}.nri-lote-contador{align-self:flex-start}.nri-lote-item{grid-template-columns:repeat(2,minmax(0,1fr))}.nri-lote-item .acoes{grid-column:1/-1}.nri-lote-editor-actions{flex-direction:column}.nri-lote-editor-actions .btn{width:100%}}
