@@ -2,7 +2,8 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKUbmHswmXauzd6dZV
 const PASTA_IMAGENS = "imagens_produtos";
 const EXTENSOES_IMAGEM = ["png","jpg","jpeg","webp"];
 const TZ = "America/Fortaleza";
-const SESSION_KEY = "nri_session_v2";
+const SESSION_KEY = "nri_session_v17";
+const LEGACY_SESSION_KEYS = ["nri_session_v2"];
 
 let config = { produtos: [], unidades: [], conferentes: [], turnos: [], motoristas: [], fabricas: [], clientes: [], motivosAvaria: [] };
 let pendentes = [];
@@ -17,6 +18,7 @@ let impressaoPendente = null;
 let enviandoCadastro = false;
 let enviandoAvaria = false;
 let fotoAvariaDataUrl = "";
+let fotoAvariaGps = null;
 let itensAvaria = [];
 let itemAvariaEditandoId = "";
 let assinaturaFeita = false;
@@ -24,7 +26,11 @@ let desenhandoAssinatura = false;
 let avariaDetalheAtual = null;
 let timerAtualizacaoAutomatica = null;
 let atualizacaoAutomaticaEmAndamento = false;
+let postRequestsEmAndamento = 0;
+let ultimaAcaoServidor = 0;
+let authGeneration = 0;
 const AUTO_REFRESH_MS = 3000;
+const PAUSA_SYNC_APOS_ACAO_MS = 1200;
 
 const $ = id => document.getElementById(id);
 const isAdmin = () => usuarioAtual && usuarioAtual.perfil === "ADMIN";
@@ -39,6 +45,7 @@ function rotuloPerfil(perfil){
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  limparSessoesLegadas();
   configurarEventosBase();
   preencherDatasPadrao();
   await verificarBackend();
@@ -123,6 +130,7 @@ function configurarEventosBase(){
   $("fotoAvariaCamera").addEventListener("change", onFotoAvariaSelecionada);
   $("fotoAvariaArquivo").addEventListener("change", onFotoAvariaSelecionada);
   $("btnRemoverFotoAvaria").addEventListener("click", limparFotoAvaria);
+  if($("btnAtualizarGpsAvaria")) $("btnAtualizarGpsAvaria").addEventListener("click", capturarGpsFotoAtual);
   $("btnLimparAssinatura").addEventListener("click", limparAssinatura);
   $("btnAtualizarAvarias").addEventListener("click", () => carregarAvarias());
   ["filtroAvarias","filtroStatusAvaria","filtroLoteAvaria"].forEach(id => $(id).addEventListener(id === "filtroAvarias" ? "input" : "change", renderAvarias));
@@ -135,18 +143,25 @@ async function restaurarSessao(){
     return;
   }
 
-  const salva = localStorage.getItem(SESSION_KEY);
+  const salva = lerSessaoLocal();
   if(!salva){ mostrarLogin(); return; }
 
+  const minhaGeracao = ++authGeneration;
   try{
     const sessao = JSON.parse(salva);
     tokenSessao = sessao.token || "";
+    if(!tokenSessao) throw new Error("Sessão inválida");
     const d = await getApi("sessao");
+    if(minhaGeracao !== authGeneration) return;
     if(d.status !== "success") throw new Error(d.message || "Sessão expirada");
     usuarioAtual = d.usuario;
+    salvarSessaoLocal();
     await iniciarAplicacao();
   }catch(e){
+    if(minhaGeracao !== authGeneration) return;
     limparSessaoLocal();
+    tokenSessao = "";
+    usuarioAtual = null;
     mostrarLogin("Sua sessão expirou. Entre novamente.");
   }
 }
@@ -159,29 +174,40 @@ async function fazerLogin(ev){
   const senha = $("loginSenha").value;
   if(!usuario || !senha) return mostrarMensagemLogin("Informe usuário e senha.");
 
+  const minhaGeracao = ++authGeneration;
+  pararAtualizacaoAutomatica();
+  limparSessaoLocal();
+  tokenSessao = "";
+  usuarioAtual = null;
+
   $("btnEntrar").disabled = true;
   $("btnEntrar").textContent = "Entrando...";
   mostrarMensagemLogin("");
 
   try{
+    await esperar(0); // permite ao navegador mostrar o clique imediatamente
     const d = await postApi({acao:"login",usuario,senha}, true);
+    if(minhaGeracao !== authGeneration) return;
     if(d.status !== "success") throw new Error(d.message || "Falha no login.");
     tokenSessao = d.token;
     usuarioAtual = d.usuario;
-    localStorage.setItem(SESSION_KEY, JSON.stringify({token:tokenSessao,usuario:usuarioAtual}));
+    salvarSessaoLocal();
     $("loginSenha").value = "";
     await iniciarAplicacao();
   }catch(e){
+    if(minhaGeracao !== authGeneration) return;
     const msg = String(e.message || e || "");
     if(msg.includes("Failed to fetch") || msg.includes("NetworkError")){
-      mostrarMensagemLogin("Não foi possível concluir o login. Confirme se o Apps Script publicado está na versão 7.0 e tente novamente.");
+      mostrarMensagemLogin("Não foi possível concluir o login. Verifique sua conexão e tente novamente.");
       definirStatusBackend("error","Falha de conexão com o Apps Script");
     }else{
       mostrarMensagemLogin(msg || "Usuário ou senha inválidos.");
     }
   }finally{
-    $("btnEntrar").disabled = false;
-    $("btnEntrar").textContent = "Entrar";
+    if(minhaGeracao === authGeneration){
+      $("btnEntrar").disabled = false;
+      $("btnEntrar").textContent = "Entrar";
+    }
   }
 }
 
@@ -190,15 +216,15 @@ async function iniciarAplicacao(){
   $("loginScreen").classList.add("oculto");
   $("appShell").classList.remove("oculto");
 
-  await carregarConfig();
-
-  if(podeNri()) await carregarPendentes();
-  if(isAdmin()) await Promise.all([carregarHistorico(), carregarUsuarios(), carregarAvarias()]);
-
   preencherDatasPadrao();
   limparFormularioAvaria();
-  abrirView(usuarioAtual?.perfil === "COLABORADOR_ENTREGA" ? "avarias" : "cadastro");
+  abrirView(usuarioAtual?.perfil === "COLABORADOR_ENTREGA" ? "avarias" : "cadastro", true);
   iniciarAtualizacaoAutomatica();
+
+  // Configuração é necessária para os formulários; listas grandes são carregadas em segundo plano.
+  await carregarConfig();
+  if(podeNri()) carregarPendentes(true);
+  if(isAdmin()) carregarAvarias(true);
 }
 
 function aplicarPerfil(){
@@ -233,18 +259,47 @@ function alternarSenhaLogin(){
   $("btnMostrarSenha").textContent = mostrar ? "Ocultar" : "Mostrar";
 }
 
-async function sair(){
+function sair(){
+  // A sessão local é encerrada ANTES de qualquer chamada de rede. Assim um reload não reconecta a conta anterior.
+  const tokenParaEncerrar = tokenSessao;
+  ++authGeneration;
   pararAtualizacaoAutomatica();
-  try{ if(tokenSessao) await postApi({acao:"logout"}); }catch(_e){}
   limparSessaoLocal();
   usuarioAtual = null;
   tokenSessao = "";
+  impressaoPendente = null;
+  $("loginUsuario").value = "";
+  $("loginSenha").value = "";
   mostrarLogin();
+
+  if(tokenParaEncerrar){
+    fetch(WEB_APP_URL,{
+      method:"POST",
+      mode:"no-cors",
+      body:JSON.stringify({acao:"logout",token:tokenParaEncerrar,requestId:""})
+    }).catch(()=>{});
+  }
 }
 
-function limparSessaoLocal(){ localStorage.removeItem(SESSION_KEY); }
+function lerSessaoLocal(){
+  try{ return sessionStorage.getItem(SESSION_KEY); }catch(_e){ return null; }
+}
+function salvarSessaoLocal(){
+  try{
+    if(tokenSessao && usuarioAtual){
+      sessionStorage.setItem(SESSION_KEY,JSON.stringify({token:tokenSessao,usuario:usuarioAtual}));
+    }
+  }catch(_e){}
+}
+function limparSessoesLegadas(){
+  try{ LEGACY_SESSION_KEYS.forEach(k=>localStorage.removeItem(k)); }catch(_e){}
+}
+function limparSessaoLocal(){
+  try{ sessionStorage.removeItem(SESSION_KEY); }catch(_e){}
+  try{ localStorage.removeItem(SESSION_KEY); LEGACY_SESSION_KEYS.forEach(k=>localStorage.removeItem(k)); }catch(_e){}
+}
 
-function abrirView(nome){
+function abrirView(nome, pularAtualizacao=false){
   if(["cadastro","pendentes"].includes(nome) && !podeNri()){
     toast("Seu perfil não possui acesso aos módulos de NRI.","erro"); return;
   }
@@ -272,6 +327,13 @@ function abrirView(nome){
   $("tituloPagina").textContent = titulos[nome][0];
   $("subtituloPagina").textContent = titulos[nome][1];
   alternarMenu(false);
+
+  if(!pularAtualizacao){
+    if(nome === "pendentes" && podeNri()) carregarPendentes(true);
+    else if(nome === "avarias-admin" && isAdmin()) carregarAvarias(true);
+    else if(nome === "historico" && isAdmin()) carregarHistorico(true);
+    else if(nome === "usuarios" && isAdmin()) carregarUsuarios(true);
+  }
 }
 
 function alternarMenu(abrir){
@@ -293,19 +355,19 @@ function pararAtualizacaoAutomatica(){
 
 async function sincronizarTelaAtual(){
   if(atualizacaoAutomaticaEmAndamento || !usuarioAtual || !tokenSessao) return;
+  if(postRequestsEmAndamento > 0 || Date.now() - ultimaAcaoServidor < PAUSA_SYNC_APOS_ACAO_MS) return;
   if(document.visibilityState === "hidden") return;
   if(document.querySelector(".modal.aberto")) return;
 
   const view = document.querySelector(".view.ativo");
   if(!view) return;
 
+  // Formulários não precisam baixar novamente toda a base a cada 3 s.
+  // Isso evitava várias leituras pesadas de produtos/clientes enquanto o usuário tentava clicar/salvar.
+  if(view.id === "view-cadastro" || view.id === "view-avarias") return;
+
   atualizacaoAutomaticaEmAndamento = true;
   try{
-    if(view.id === "view-cadastro"){
-      await carregarConfig(true);
-      return;
-    }
-
     if(view.id === "view-pendentes"){
       const selecionados = new Set(
         [...document.querySelectorAll(".sel-pendente:checked")].map(x => String(x.dataset.id))
@@ -316,11 +378,6 @@ async function sincronizarTelaAtual(){
         renderPendentes(selecionados);
         atualizarBadge();
       }
-      return;
-    }
-
-    if(view.id === "view-avarias" && podeAvarias()){
-      await carregarConfig(true);
       return;
     }
 
@@ -356,7 +413,6 @@ async function sincronizarTelaAtual(){
     atualizacaoAutomaticaEmAndamento = false;
   }
 }
-
 document.addEventListener("visibilitychange", () => {
   if(document.visibilityState === "visible" && usuarioAtual && tokenSessao){
     sincronizarTelaAtual();
@@ -520,22 +576,23 @@ async function cadastrarNris(ev){
   if(Number($("qtdPaletes").value)<1 || Number($("qtdPaletes").value)>99) return toast("Quantidade de paletes deve ficar entre 1 e 99.","erro");
 
   enviandoCadastro=true; $("btnCadastrar").disabled=true; $("btnCadastrar").textContent="Salvando...";
+  await esperar(0);
   try{
     const payload={acao:"criar",unidade:$("unidade").value,codigoProduto:produtoAtual.codigo,nomeProduto:produtoAtual.nome,validade:$("validade").value,lote:$("lote").value.trim(),recebimento:$("recebimento").value,conferente:$("conferente").value,turno:$("turno").value,hora:$("hora").value,motorista:$("motorista").value,placa:$("placa").value.trim(),fabrica:$("fabrica").value,quantidade:Number($("quantidade").value),quantidadePaletes:Number($("qtdPaletes").value)};
     const d=await postApi(payload); if(d.status!=="success") throw new Error(d.message||"Erro ao cadastrar");
     toast(`${d.nris.length} NRI(s) cadastrado(s): ${d.nris.join(", ")}`,"sucesso");
     $("formCadastro").reset(); preencherDatasPadrao(); produtoAtual=null; resetPreviewProduto();
-    await carregarPendentes();
-    if(isAdmin()) await carregarHistorico();
-    abrirView("pendentes");
+    abrirView("pendentes", true);
+    carregarPendentes(true);
+    if(isAdmin()) carregarHistorico(true);
   }catch(e){ tratarErroApi(e); }
   finally{ enviandoCadastro=false; $("btnCadastrar").disabled=false; $("btnCadastrar").textContent="Cadastrar NRI(s)"; }
 }
 
-async function carregarPendentes(){
-  $("tbodyPendentes").innerHTML='<tr><td colspan="7" class="loading-row">Carregando...</td></tr>';
+async function carregarPendentes(silencioso=false){
+  if(!silencioso) $("tbodyPendentes").innerHTML='<tr><td colspan="7" class="loading-row">Carregando...</td></tr>';
   try{ const d=await getApi("pendentes"); if(d.status!=="success") throw new Error(d.message); pendentes=d.registros||[]; renderPendentes(); atualizarBadge(); }
-  catch(e){ $("tbodyPendentes").innerHTML='<tr><td colspan="7" class="empty-row">Falha ao carregar pendências.</td></tr>'; tratarErroApi(e); }
+  catch(e){ if(!silencioso) $("tbodyPendentes").innerHTML='<tr><td colspan="7" class="empty-row">Falha ao carregar pendências.</td></tr>'; tratarErroApi(e); }
 }
 
 function filtrarPendentes(){
@@ -561,15 +618,24 @@ function atualizarBadge(){ $("badgePendentes").textContent=pendentes.length; }
 
 async function removerNri(r){
   if(!confirm(`Remover ${r.nri} da fila de impressão? O registro permanecerá no histórico.`)) return;
-  try{ const d=await postApi({acao:"remover",ids:[r.id]}); if(d.status!=="success") throw new Error(d.message); toast("NRI removido da fila.","sucesso"); await carregarPendentes(); if(isAdmin()) await carregarHistorico(); }
-  catch(e){ tratarErroApi(e); }
+  const anterior=pendentes.slice();
+  pendentes=pendentes.filter(x=>String(x.id)!==String(r.id));
+  renderPendentes(); atualizarBadge();
+  try{
+    const d=await postApi({acao:"remover",ids:[r.id]});
+    if(d.status!=="success") throw new Error(d.message);
+    toast("NRI removido da fila.","sucesso");
+    if(isAdmin()) carregarHistorico(true);
+  }catch(e){
+    pendentes=anterior; renderPendentes(); atualizarBadge(); tratarErroApi(e);
+  }
 }
 
-async function carregarHistorico(){
+async function carregarHistorico(silencioso=false){
   if(!isAdmin()) return;
-  $("tbodyHistorico").innerHTML='<tr><td colspan="7" class="loading-row">Carregando...</td></tr>';
+  if(!silencioso) $("tbodyHistorico").innerHTML='<tr><td colspan="7" class="loading-row">Carregando...</td></tr>';
   try{ const d=await getApi("historico"); if(d.status!=="success") throw new Error(d.message); historico=d.registros||[]; renderHistorico(); }
-  catch(e){ $("tbodyHistorico").innerHTML='<tr><td colspan="7" class="empty-row">Falha ao carregar histórico.</td></tr>'; tratarErroApi(e); }
+  catch(e){ if(!silencioso) $("tbodyHistorico").innerHTML='<tr><td colspan="7" class="empty-row">Falha ao carregar histórico.</td></tr>'; tratarErroApi(e); }
 }
 
 function filtrarHistorico(){
@@ -587,7 +653,7 @@ function renderHistorico(){
 
 function limparFiltrosHistorico(){ ["filtroHistorico","filtroStatus","filtroHistUnidade","filtroDe","filtroAte"].forEach(id=>$(id).value=""); renderHistorico(); }
 
-async function carregarUsuarios(){
+async function carregarUsuarios(silencioso=false){
   if(!isAdmin()) return;
   try{ const d=await getApi("usuarios"); if(d.status!=="success") throw new Error(d.message); usuarios=d.usuarios||[]; renderUsuarios(); }
   catch(e){ tratarErroApi(e); }
@@ -638,7 +704,7 @@ async function salvarUsuario(ev){
   try{
     const d=await postApi({acao:"salvarUsuario",usuarioOriginal:original,usuario,nome,perfil,senha,ativo});
     if(d.status!=="success") throw new Error(d.message);
-    toast("Usuário salvo com sucesso.","sucesso"); limparFormularioUsuario(); await carregarUsuarios();
+    toast("Usuário salvo com sucesso.","sucesso"); limparFormularioUsuario(); carregarUsuarios(true);
   }catch(e){ tratarErroApi(e); }
   finally{ $("btnSalvarUsuario").disabled=false; $("btnSalvarUsuario").textContent="Salvar usuário"; }
 }
@@ -685,13 +751,76 @@ async function onFotoAvariaSelecionada(ev){
   input.value="";
   if(!file) return;
   if(!String(file.type||"").startsWith("image/")) return toast("Selecione um arquivo de imagem.","erro");
+  fotoAvariaGps=null;
+  atualizarStatusGpsAvaria("obtendo");
   try{
-    $("fotoAvariaStatus").textContent="Processando...";
-    fotoAvariaDataUrl=await comprimirImagem(file,1400,0.78);
+    $("fotoAvariaStatus").textContent="Processando foto...";
+    fotoAvariaDataUrl=await comprimirImagem(file,1200,0.72);
     mostrarFotoAvariaAtual();
+    await capturarGpsFotoAtual(true);
   }catch(e){
-    limparFotoAvaria();
-    toast("Não foi possível processar a foto.","erro");
+    if(!fotoAvariaDataUrl) limparFotoAvaria();
+    toast(e.message||"Não foi possível processar a foto.","erro");
+  }
+}
+
+function obterLocalizacaoGpsAvaria(){
+  return new Promise((resolve,reject)=>{
+    if(!navigator.geolocation) return reject(new Error("Este dispositivo/navegador não oferece localização GPS."));
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const c=pos.coords||{};
+      resolve({
+        latitude:Number(Number(c.latitude).toFixed(7)),
+        longitude:Number(Number(c.longitude).toFixed(7)),
+        precisaoGps:Math.round(Number(c.accuracy||0)*10)/10,
+        gpsCapturadoEm:new Date(pos.timestamp||Date.now()).toISOString()
+      });
+    },err=>{
+      const msgs={1:"Permissão de localização negada. Autorize a localização para este site e tente novamente.",2:"Não foi possível determinar a localização. Verifique se o GPS está ligado e tente novamente.",3:"O GPS demorou para responder. Vá para uma área com melhor sinal e tente novamente."};
+      reject(new Error(msgs[err.code]||"Não foi possível obter a localização GPS."));
+    },{enableHighAccuracy:true,maximumAge:0,timeout:15000});
+  });
+}
+
+async function capturarGpsFotoAtual(silencioso=false){
+  if(!fotoAvariaDataUrl){
+    if(!silencioso) toast("Adicione a foto antes de capturar a localização.","erro");
+    return false;
+  }
+  atualizarStatusGpsAvaria("obtendo");
+  try{
+    fotoAvariaGps=await obterLocalizacaoGpsAvaria();
+    atualizarStatusGpsAvaria("ok");
+    if(!silencioso) toast("Localização GPS capturada.","sucesso");
+    return true;
+  }catch(e){
+    fotoAvariaGps=null;
+    atualizarStatusGpsAvaria("erro",e.message||String(e));
+    if(!silencioso) toast(e.message||String(e),"erro");
+    else toast(e.message||String(e),"erro");
+    return false;
+  }
+}
+
+function atualizarStatusGpsAvaria(estado="pendente",mensagem=""){
+  const box=$("gpsAvariaInfo"), txt=$("gpsAvariaTexto"), btn=$("btnAtualizarGpsAvaria");
+  if(!box||!txt) return;
+  box.classList.remove("ok","erro","obtendo");
+  if(estado==="ok" && fotoAvariaGps){
+    box.classList.add("ok");
+    txt.innerHTML=`<strong>GPS capturado</strong><small>${fotoAvariaGps.latitude.toFixed(7)}, ${fotoAvariaGps.longitude.toFixed(7)} • precisão aproximada ±${Math.round(fotoAvariaGps.precisaoGps)} m</small>`;
+    if(btn){ btn.textContent="Atualizar GPS"; btn.classList.remove("oculto"); }
+  }else if(estado==="obtendo"){
+    box.classList.add("obtendo");
+    txt.innerHTML='<strong>Obtendo localização...</strong><small>Aguarde a leitura do GPS do celular.</small>';
+    if(btn) btn.classList.add("oculto");
+  }else if(estado==="erro"){
+    box.classList.add("erro");
+    txt.innerHTML=`<strong>GPS não capturado</strong><small>${esc(mensagem||"Ative a localização e tente novamente.")}</small>`;
+    if(btn){ btn.textContent="Tentar GPS novamente"; btn.classList.remove("oculto"); }
+  }else{
+    txt.innerHTML='<strong>Localização GPS</strong><small>Será capturada automaticamente quando a foto for adicionada.</small>';
+    if(btn) btn.classList.add("oculto");
   }
 }
 
@@ -705,6 +834,7 @@ function mostrarFotoAvariaAtual(){
   $("fotoAvariaStatus").textContent="Foto pronta";
   $("fotoAvariaStatus").classList.add("ok");
   $("btnRemoverFotoAvaria").classList.remove("oculto");
+  if(fotoAvariaGps) atualizarStatusGpsAvaria("ok");
 }
 
 function comprimirImagem(file,maxDim=1400,qualidade=0.78){
@@ -731,10 +861,12 @@ function comprimirImagem(file,maxDim=1400,qualidade=0.78){
 
 function limparFotoAvaria(){
   fotoAvariaDataUrl="";
+  fotoAvariaGps=null;
   const area=$("fotoAvariaPreview");
   if(area){ area.classList.add("vazio"); area.innerHTML='<span>&#128247;</span><small>Nenhuma foto adicionada</small>'; }
   if($("fotoAvariaStatus")){ $("fotoAvariaStatus").textContent="Pendente"; $("fotoAvariaStatus").classList.remove("ok"); }
   if($("btnRemoverFotoAvaria")) $("btnRemoverFotoAvaria").classList.add("oculto");
+  atualizarStatusGpsAvaria("pendente");
 }
 
 function configurarCanvasAssinatura(){
@@ -783,7 +915,9 @@ function capturarProdutoAvariaAtual(){
   if(!["UNIDADE","CAIXA"].includes(unidade)){ toast("Selecione UNIDADE ou CAIXA.","erro"); return null; }
   if(!motivo){ toast("Selecione o motivo da avaria.","erro"); return null; }
   if(!fotoAvariaDataUrl){ toast("Adicione uma foto deste produto avariado.","erro"); return null; }
-  return {idTemp:itemAvariaEditandoId||gerarIdTemporarioAvaria(),produtoAvariado:produto,lote:lote,quantidadeAvariada:quantidade,unidadeQuantidade:unidade,motivoAvaria:motivo,fotoDataUrl:fotoAvariaDataUrl};
+  if(!fotoAvariaGps){ toast("A localização GPS da foto é obrigatória. Autorize a localização e capture o GPS.","erro"); return null; }
+  return {idTemp:itemAvariaEditandoId||gerarIdTemporarioAvaria(),produtoAvariado:produto,lote:lote,quantidadeAvariada:quantidade,unidadeQuantidade:unidade,motivoAvaria:motivo,fotoDataUrl:fotoAvariaDataUrl,
+    latitude:fotoAvariaGps.latitude,longitude:fotoAvariaGps.longitude,precisaoGps:fotoAvariaGps.precisaoGps,gpsCapturadoEm:fotoAvariaGps.gpsCapturadoEm};
 }
 
 function adicionarProdutoAvaria(silencioso=false){
@@ -817,7 +951,9 @@ function editarProdutoAvaria(idTemp){
   $("avariaUnidadeQtd").value=item.unidadeQuantidade;
   $("avariaMotivo").value=item.motivoAvaria;
   fotoAvariaDataUrl=item.fotoDataUrl;
+  fotoAvariaGps=(Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude)))?{latitude:Number(item.latitude),longitude:Number(item.longitude),precisaoGps:Number(item.precisaoGps||0),gpsCapturadoEm:item.gpsCapturadoEm||""}:null;
   mostrarFotoAvariaAtual();
+  atualizarStatusGpsAvaria(fotoAvariaGps?"ok":"erro","Localização não disponível. Capture novamente antes de salvar.");
   $("btnAdicionarProdutoAvaria").textContent="Salvar alteração do produto";
   $("btnCancelarEdicaoItemAvaria").classList.remove("oculto");
   $("avariaProduto").scrollIntoView({behavior:"smooth",block:"center"});
@@ -842,6 +978,7 @@ function renderItensAvariaCadastro(){
     <div class="item-avaria-info"><span>Lote</span><strong>${esc(item.lote)}</strong></div>
     <div class="item-avaria-info"><span>Quantidade</span><strong>${esc(item.quantidadeAvariada)} ${esc(formatarUnidadeAvaria(item.unidadeQuantidade))}</strong></div>
     <div class="item-avaria-info"><span>Motivo</span><strong>${esc(item.motivoAvaria)}</strong></div>
+    <div class="item-avaria-info"><span>GPS</span><strong>${Number.isFinite(Number(item.latitude))?`Capturado • ±${Math.round(Number(item.precisaoGps||0))} m`:"Pendente"}</strong></div>
     <div class="item-avaria-acoes"><button type="button" class="btn-mini" data-editar>Editar</button><button type="button" class="btn-mini perigo" data-remover>Remover</button></div>
   </div>`).join("");
   lista.querySelectorAll("[data-id]").forEach(row=>{
@@ -875,6 +1012,7 @@ async function salvarAvaria(ev){
   if(!assinaturaFeita) return toast("A assinatura do cliente é obrigatória.","erro");
 
   enviandoAvaria=true; $("btnSalvarAvaria").disabled=true; $("btnSalvarAvaria").textContent=`Enviando ${itensAvaria.length} produto(s)...`;
+  await esperar(0);
   try{
     const d=await postApi({
       acao:"salvarAvaria",data:$("avariaData").value,pdv:$("avariaPdv").value.trim(),mapa:$("avariaMapa").value.trim(),
@@ -883,7 +1021,7 @@ async function salvarAvaria(ev){
     if(d.status!=="success") throw new Error(d.message||"Erro ao registrar requisição de avaria.");
     toast(`Requisição registrada com ${d.totalItens||itensAvaria.length} produto(s).`,"sucesso");
     limparFormularioAvaria();
-    if(isAdmin()) await carregarAvarias(true);
+    if(isAdmin()) carregarAvarias(true);
   }catch(e){ tratarErroApi(e); }
   finally{ enviandoAvaria=false; $("btnSalvarAvaria").disabled=false; $("btnSalvarAvaria").textContent="Registrar requisição"; }
 }
@@ -997,14 +1135,30 @@ function renderItemDetalheAvaria(item,idx){
           ${detalheItem("Produto",item.produtoAvariado)}${detalheItem("Lote",item.lote)}
           ${detalheItem("Quantidade",item.quantidadeAvariada+" "+formatarUnidadeAvaria(item.unidadeQuantidade))}${detalheItem("Motivo",item.motivoAvaria)}
           <div class="detalhe-item"><span>Comparação com NRI</span><strong>${comp}</strong></div>${detalheItem("Status",item.status)}
+          ${detalheItem("Coordenadas GPS",formatarCoordenadasGps(item))}${detalheItem("Precisão GPS",formatarPrecisaoGps(item.precisaoGps))}
         </div>
         <div class="avaria-item-acoes"><button type="button" class="btn secundario" data-aprovar-item="${esc(item.idItem)}">Aprovar este produto</button><button type="button" class="btn perigo" data-reprovar-item="${esc(item.idItem)}">Reprovar este produto</button></div>
         ${item.avaliadoPorNome?`<div class="avaliacao-box"><strong>Avaliado por:</strong> ${esc(item.avaliadoPorNome)} em ${esc(item.avaliadoEm||"")}${item.observacaoAvaliacao?`<br><strong>Observação:</strong> ${esc(item.observacaoAvaliacao)}`:""}</div>`:""}
       </div>
-      <div class="avaria-item-foto">${foto}</div>
+      <div class="avaria-item-evidencias-admin"><div class="avaria-item-foto">${foto}</div>${renderMapaGpsAvaria(item)}</div>
     </div>
     ${renderCorrespondenciasNri(item.correspondenciasNri||[])}
   </div>`;
+}
+
+function formatarCoordenadasGps(item){
+  const lat=Number(item?.latitude), lng=Number(item?.longitude);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)) return "-";
+  return `${lat.toFixed(7)}, ${lng.toFixed(7)}`;
+}
+function formatarPrecisaoGps(v){ const n=Number(v); return Number.isFinite(n)?`±${Math.round(n)} m`:"-"; }
+function renderMapaGpsAvaria(item){
+  const lat=Number(item?.latitude), lng=Number(item?.longitude);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)) return '<div class="mapa-gps-vazio">Localização GPS indisponível para esta foto.</div>';
+  const q=`${lat.toFixed(7)},${lng.toFixed(7)}`;
+  const src=`https://www.google.com/maps?q=${encodeURIComponent(q)}&z=19&output=embed`;
+  const href=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+  return `<div class="mapa-gps-card"><div class="mapa-gps-head"><div><strong>Local exato da foto</strong><span>${esc(q)} • ${esc(formatarPrecisaoGps(item.precisaoGps))}</span></div><a href="${href}" target="_blank" rel="noopener noreferrer">Abrir no Google Maps</a></div><iframe src="${src}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Localização GPS da avaria"></iframe></div>`;
 }
 
 function detalheItem(rotulo,valor){ return `<div class="detalhe-item"><span>${esc(rotulo)}</span><strong>${esc(valor||"-")}</strong></div>`; }
@@ -1034,10 +1188,18 @@ async function avaliarItensAvaria(idRequisicao,decisao,idsItens=[],todos=false,m
   try{
     const d=await postApi({acao:"avaliarAvaria",idRequisicao,idsItens,todos,decisao,observacao}); if(d.status!=="success") throw new Error(d.message);
     toast(`${d.itensAvaliados||qtd} produto(s) ${decisao==="APROVADO"?"aprovado(s)":"reprovado(s)"}.`,"sucesso");
-    await carregarAvarias(true);
-    if(manterModal && document.getElementById("modalDetalheAvaria").classList.contains("aberto")){
-      await visualizarAvaria({id:idRequisicao},true);
+    if(avariaDetalheAtual?.id===idRequisicao){
+      const alvoIds=new Set(idsItens.map(String));
+      (avariaDetalheAtual.itens||[]).forEach(item=>{
+        if(todos || alvoIds.has(String(item.idItem))){ item.status=decisao; item.avaliadoPorNome=usuarioAtual?.nome||usuarioAtual?.usuario||""; }
+      });
+      avariaDetalheAtual.status=d.statusRequisicao||avariaDetalheAtual.status;
+      if(manterModal && document.getElementById("modalDetalheAvaria").classList.contains("aberto")){
+        const assinaturaAtual=document.querySelector(".assinatura-admin img")?.src||"";
+        renderDetalheAvariaAdmin(avariaDetalheAtual,assinaturaAtual);
+      }
     }
+    carregarAvarias(true);
   }catch(e){ tratarErroApi(e); }
 }
 
@@ -1054,23 +1216,45 @@ async function iniciarImpressao(registros, reemissao=false){
   impressaoPendente={registros,reemissao};
   const frame=$("printFrame"); const doc=frame.contentWindow.document;
   doc.open(); doc.write(documentoImpressao(registros)); doc.close();
-  await new Promise(r=>setTimeout(r,700));
+  await esperar(160);
   fecharModal("modalPreview");
   frame.contentWindow.focus(); frame.contentWindow.print();
-  setTimeout(()=>abrirModal("modalConfirmacaoImpressao"),350);
+  setTimeout(()=>abrirModal("modalConfirmacaoImpressao"),60);
 }
 
 async function confirmarImpressaoConcluida(){
   if(!impressaoPendente) return;
-  const ids=impressaoPendente.registros.map(r=>r.id);
-  try{ const d=await postApi({acao:"confirmarImpressao",ids,reemissao:!!impressaoPendente.reemissao,copias:3}); if(d.status!=="success") throw new Error(d.message); toast(impressaoPendente.reemissao?"Reemissão registrada.":"Impressão confirmada e fila atualizada.","sucesso"); fecharModal("modalConfirmacaoImpressao"); impressaoPendente=null; await carregarPendentes(); if(isAdmin()) await carregarHistorico(); }
-  catch(e){ tratarErroApi(e); }
+  const operacao=impressaoPendente;
+  const ids=operacao.registros.map(r=>r.id);
+  const anterior=pendentes.slice();
+  if(!operacao.reemissao){
+    const setIds=new Set(ids.map(String));
+    pendentes=pendentes.filter(r=>!setIds.has(String(r.id)));
+    renderPendentes(); atualizarBadge();
+  }
+  impressaoPendente=null;
+  fecharModal("modalConfirmacaoImpressao");
+  toast("Confirmando impressão...","");
+  try{
+    const d=await postApi({acao:"confirmarImpressao",ids,reemissao:!!operacao.reemissao,copias:3});
+    if(d.status!=="success") throw new Error(d.message);
+    toast(operacao.reemissao?"Reemissão registrada.":"Impressão confirmada e fila atualizada.","sucesso");
+    carregarPendentes(true);
+    if(isAdmin()) carregarHistorico(true);
+  }catch(e){
+    if(!operacao.reemissao){ pendentes=anterior; renderPendentes(); atualizarBadge(); }
+    tratarErroApi(e);
+  }
 }
 
-async function confirmarImpressaoCancelada(){
+function confirmarImpressaoCancelada(){
   if(!impressaoPendente){ fecharModal("modalConfirmacaoImpressao"); return; }
-  try{ await postApi({acao:"cancelarImpressao",ids:impressaoPendente.registros.map(r=>r.id),reemissao:!!impressaoPendente.reemissao}); }catch(_e){}
-  impressaoPendente=null; fecharModal("modalConfirmacaoImpressao"); toast("Impressão mantida como não concluída.","erro");
+  const operacao=impressaoPendente;
+  impressaoPendente=null;
+  fecharModal("modalConfirmacaoImpressao");
+  toast("Impressão mantida como não concluída.","erro");
+  // Cancelamento não altera a fila; registra o evento em segundo plano sem travar a interface.
+  postApi({acao:"cancelarImpressao",ids:operacao.registros.map(r=>r.id),reemissao:!!operacao.reemissao}).catch(()=>{});
 }
 
 function documentoImpressao(registros){
@@ -1130,46 +1314,56 @@ async function postApi(payload, semToken=false){
     ? {...payload,requestId}
     : {...payload,token:tokenSessao,requestId};
 
-  /*
-    O Apps Script usa ContentService, que redireciona a resposta para
-    script.googleusercontent.com. Em alguns navegadores, ler diretamente
-    a resposta de um POST iniciado no GitHub Pages pode falhar por causa
-    desse redirecionamento. Por isso o POST é enviado em modo no-cors e
-    o resultado é consultado logo em seguida por GET usando requestId.
-  */
+  postRequestsEmAndamento++;
+  ultimaAcaoServidor = Date.now();
+  let erroEnvio = null;
+
   try{
-    await fetch(WEB_APP_URL,{
+    // Envia e começa a consultar o resultado em paralelo. Antes o sistema esperava o POST
+    // terminar para só então fazer um segundo acesso, o que dobrava a sensação de demora.
+    fetch(WEB_APP_URL,{
       method:"POST",
       mode:"no-cors",
       body:JSON.stringify(body)
-    });
-  }catch(_e){
-    throw new Error("Não foi possível enviar a solicitação ao Apps Script.");
+    }).catch(e=>{ erroEnvio=e; });
+
+    const inicio = Date.now();
+    const timeoutMs = 30000;
+    let intervalo = 110;
+
+    while(Date.now() - inicio < timeoutMs){
+      await esperar(intervalo);
+      if(erroEnvio) throw new Error("Não foi possível enviar a solicitação ao Apps Script.");
+
+      try{
+        const qs = new URLSearchParams({
+          acao:"resultadoPost",
+          requestId,
+          _:Date.now().toString()
+        });
+        const r = await fetch(`${WEB_APP_URL}?${qs.toString()}`,{cache:"no-store"});
+        const d = await lerRespostaJson(r);
+
+        if(d.status === "processing"){
+          intervalo = Math.min(450, intervalo + 70);
+          continue;
+        }
+        if(d.status === "unauthorized") throw new Error("SESSAO_EXPIRADA");
+        return d;
+      }catch(e){
+        const msg=String(e.message||e||"");
+        if(msg === "SESSAO_EXPIRADA") throw e;
+        if(Date.now() - inicio > 5000 && (msg.includes("Failed to fetch") || msg.includes("NetworkError"))) throw e;
+        intervalo = Math.min(500, intervalo + 80);
+      }
+    }
+
+    throw new Error("O servidor demorou mais que o esperado para concluir a operação. Tente novamente.");
+  }finally{
+    postRequestsEmAndamento = Math.max(0,postRequestsEmAndamento-1);
+    ultimaAcaoServidor = Date.now();
   }
-
-  const inicio = Date.now();
-  const timeoutMs = 30000;
-
-  while(Date.now() - inicio < timeoutMs){
-    await esperar(350);
-
-    const qs = new URLSearchParams({
-      acao:"resultadoPost",
-      requestId,
-      _:Date.now().toString()
-    });
-
-    const r = await fetch(`${WEB_APP_URL}?${qs.toString()}`,{cache:"no-store"});
-    const d = await lerRespostaJson(r);
-
-    if(d.status === "processing") continue;
-    if(d.status === "unauthorized") throw new Error("SESSAO_EXPIRADA");
-    return d;
-  }
-
-  throw new Error("O servidor demorou mais que o esperado para concluir a operação. Tente novamente.");
 }
-
 function gerarRequestId(){
   if(window.crypto && typeof window.crypto.randomUUID === "function"){
     return window.crypto.randomUUID();
@@ -1192,6 +1386,7 @@ async function lerRespostaJson(response){
 
 function tratarErroApi(e){
   if(String(e.message||e) === "SESSAO_EXPIRADA"){
+    ++authGeneration;
     pararAtualizacaoAutomatica();
     limparSessaoLocal(); tokenSessao=""; usuarioAtual=null; mostrarLogin("Sua sessão expirou. Entre novamente.");
     return;
